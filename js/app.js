@@ -1,85 +1,54 @@
-// Telegram Web App obyekti
 const tg = window.Telegram.WebApp;
 
 const app = {
-  currentUser: null, // Foydalanuvchi ma'lumotlari saqlanadi
-  currentClassId: null,
-  currentClassName: null,
-  studentsData: [], // Hisobot uchun kesh
+  currentUser: null,
+  currentAdminClassView: [], // Admin sinf ichidagi o'quvchilarni saqlash uchun
   
-  // ==========================================
-  // 1. TIZIMNI ISHGA TUSHIRISH
-  // ==========================================
   init: () => {
-    tg.ready();
-    tg.expand(); // Web App ni to'liq ekranda ochish
-    
-    // Telegram dizayn ranglarini qo'llash
+    tg.ready(); tg.expand();
     document.documentElement.style.setProperty('--bg-color', tg.themeParams.bg_color || '#ffffff');
     document.documentElement.style.setProperty('--text-color', tg.themeParams.text_color || '#000000');
 
-    // Lokal xotiradan userni qidirish (Avtomatik kirish uchun)
     const savedUser = localStorage.getItem('leCrayonUser');
     if (savedUser) {
+      // Yangi login qilganda toza ma'lumotlarni tortib olamiz (Keshni chetlab o'tamiz)
       app.currentUser = JSON.parse(savedUser);
-      if (app.currentUser.role === 'admin') {
-        app.showScreen('screen-admin-menu');
-      } else {
-        app.setupTeacherDashboard();
-      }
+      app.routeUser();
     } else {
       app.showScreen('screen-login');
     }
-
     app.setupAuthListeners();
-    app.setupEventListeners();
+    app.setupTeacherListeners();
+    app.setupProfileListeners();
   },
 
-  // ==========================================
-  // 2. EKRANLARNI ALMASHTIRISH VA NAVIGATSIYA
-  // ==========================================
-  showScreen: (screenId) => {
-    document.querySelectorAll('.screen').forEach(screen => {
-      screen.classList.add('hidden');
-      screen.classList.remove('active');
-    });
-    
-    const targetScreen = document.getElementById(screenId);
-    targetScreen.classList.remove('hidden');
-    
-    setTimeout(() => {
-      targetScreen.classList.add('active');
-    }, 10);
+  routeUser: () => {
+    if (app.currentUser.role === 'admin') app.showScreen('screen-admin-menu');
+    else app.setupTeacherDashboard();
+  },
 
-    // Header tugmalarini boshqarish
+  showScreen: (screenId) => {
+    document.querySelectorAll('.screen').forEach(s => { s.classList.add('hidden'); s.classList.remove('active'); });
+    const target = document.getElementById(screenId);
+    target.classList.remove('hidden');
+    setTimeout(() => target.classList.add('active'), 10);
+
     const backBtn = document.getElementById('back-btn');
     const logoutBtn = document.getElementById('logout-btn');
 
     if (screenId === 'screen-login' || screenId.includes('setup')) {
-      backBtn.classList.add('hidden');
-      logoutBtn.classList.add('hidden');
+      backBtn.classList.add('hidden'); logoutBtn.classList.add('hidden');
     } else if (screenId === 'screen-admin-menu' || screenId === 'screen-teacher-menu') {
-      backBtn.classList.add('hidden');
-      logoutBtn.classList.remove('hidden');
+      backBtn.classList.add('hidden'); logoutBtn.classList.remove('hidden');
     } else {
-      backBtn.classList.remove('hidden');
-      logoutBtn.classList.remove('hidden');
+      backBtn.classList.remove('hidden'); logoutBtn.classList.add('hidden');
     }
   },
 
-  handleBackBtn: () => {
-    if (app.currentUser?.role === 'admin') {
-      app.showScreen('screen-admin-menu');
-    } else if (app.currentUser?.role === 'teacher') {
-      app.showScreen('screen-teacher-menu');
-    } else {
-      app.showScreen('screen-login');
-    }
-  },
+  handleBackBtn: () => app.routeUser(),
 
   logout: () => {
-    // Tizimdan chiqish tasdig'i
-    tg.showConfirm("Haqiqatan ham tizimdan chiqmoqchimisiz?", (confirm) => {
+    tg.showConfirm("Haqiqatan ham chiqmoqchimisiz?", (confirm) => {
       if(confirm) {
         localStorage.removeItem('leCrayonUser');
         app.currentUser = null;
@@ -89,45 +58,32 @@ const app = {
     });
   },
 
-  toggleLoader: (show) => {
-    const loader = document.getElementById('loader');
-    if (show) loader.classList.remove('hidden');
-    else loader.classList.add('hidden');
-  },
+  toggleLoader: (show) => { document.getElementById('loader').classList[show ? 'remove' : 'add']('hidden'); },
 
-  // ==========================================
-  // 3. AVTORIZATSIYA (LOGIN & SETUP)
-  // ==========================================
+  // =====================================
+  // AVTORIZATSIYA
+  // =====================================
   setupAuthListeners: () => {
-    // Login formasi
     document.getElementById('form-login').addEventListener('submit', async (e) => {
       e.preventDefault();
       const userVal = document.getElementById('login-username').value;
       const passVal = document.getElementById('login-password').value;
-
       app.toggleLoader(true);
       const res = await API.login(userVal, passVal);
       app.toggleLoader(false);
-
+      
       if (res.success) {
         if (res.isFirstLogin) {
           if (res.role === 'admin') app.showScreen('screen-setup-admin');
-          if (res.role === 'teacher') {
-            app.loadClassesForTeacherSetup();
-            app.showScreen('screen-setup-teacher');
-          }
+          if (res.role === 'teacher') app.showScreen('screen-setup-teacher');
         } else {
           app.currentUser = res.user;
           localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
-          if (res.user.role === 'admin') app.showScreen('screen-admin-menu');
-          else app.setupTeacherDashboard();
+          app.routeUser();
         }
-      } else {
-        tg.showAlert(res.error);
-      }
+      } else tg.showAlert(res.error);
     });
 
-    // Admin saqlash formasi
     document.getElementById('form-setup-admin').addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = {
@@ -135,344 +91,408 @@ const app = {
         username: document.getElementById('admin-new-login').value,
         password: document.getElementById('admin-new-password').value
       };
-      
       app.toggleLoader(true);
       const res = await API.setupAdmin(data);
       app.toggleLoader(false);
-
       if(res.success) {
-        app.currentUser = res.user;
-        localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
-        app.showScreen('screen-admin-menu');
+        app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
+        app.routeUser();
       } else tg.showAlert(res.error);
     });
 
-    // O'qituvchi rasmini ko'rish (Preview)
     document.getElementById('teacher-photo').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => document.getElementById('teacher-preview-photo').src = e.target.result;
-        reader.readAsDataURL(file);
+      if(e.target.files[0]) {
+        const r = new FileReader(); r.onload = (ev) => document.getElementById('teacher-preview-photo').src = ev.target.result;
+        r.readAsDataURL(e.target.files[0]);
       }
     });
 
-    // O'qituvchi profilini saqlash formasi
     document.getElementById('form-setup-teacher').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const photoFile = document.getElementById('teacher-photo').files[0];
-      if (!photoFile) return tg.showAlert("Iltimos, rasm tanlang!");
-
+      const file = document.getElementById('teacher-photo').files[0];
+      if (!file) return tg.showAlert("Rasm tanlang yoki kameradan oling!");
       app.toggleLoader(true);
-      const photoUrl = await API.uploadImage(photoFile);
-      if(!photoUrl) {
-        app.toggleLoader(false);
-        return tg.showAlert("Rasmni yuklashda xatolik yuz berdi!");
-      }
+      const photoUrl = await API.uploadImage(file);
+      if(!photoUrl) return app.toggleLoader(false);
 
-      const sel = document.getElementById('teacher-class-select');
       const data = {
         fullName: document.getElementById('teacher-fullname').value,
         address: document.getElementById('teacher-address').value,
         phone: document.getElementById('teacher-phone').value,
         username: document.getElementById('teacher-new-login').value,
         password: document.getElementById('teacher-new-password').value,
-        classId: sel.value,
-        className: sel.options[sel.selectedIndex].text,
         photoUrl: photoUrl
       };
-
       const res = await API.setupTeacher(data);
+      app.toggleLoader(false);
+      if(res.success) {
+        app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
+        app.routeUser();
+      } else tg.showAlert(res.error);
+    });
+  },
+
+  // =====================================
+  // PROFIL (TAHRIRLASH)
+  // =====================================
+  setupProfileListeners: () => {
+    document.getElementById('edit-photo').addEventListener('change', (e) => {
+      if(e.target.files[0]) {
+        const r = new FileReader(); r.onload = (ev) => document.getElementById('edit-preview-photo').src = ev.target.result;
+        r.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('form-edit-profile').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        full_name: document.getElementById('edit-fullname').value,
+        username: document.getElementById('edit-username').value,
+        password: document.getElementById('edit-password').value
+      };
+      
+      if(app.currentUser.role === 'teacher') {
+        data.address = document.getElementById('edit-address').value;
+        data.phone = document.getElementById('edit-phone').value;
+        const file = document.getElementById('edit-photo').files[0];
+        if(file) {
+          app.toggleLoader(true);
+          data.photo_url = await API.uploadImage(file);
+          app.toggleLoader(false);
+        }
+      }
+
+      app.toggleLoader(true);
+      const res = await API.updateProfile(app.currentUser.id, data);
       app.toggleLoader(false);
 
       if(res.success) {
-        app.currentUser = res.user;
-        localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
-        app.setupTeacherDashboard();
-      } else {
-        tg.showAlert(res.error);
+        app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
+        tg.showAlert("Profil yangilandi!");
+        app.routeUser();
       }
     });
   },
 
-  // O'qituvchi profiliga sinflarni yuklash
-  loadClassesForTeacherSetup: async () => {
-    const res = await API.getClasses();
-    if(res.success) {
-      const sel = document.getElementById('teacher-class-select');
-      sel.innerHTML = '<option value="">O\'z sinfingizni tanlang</option>';
-      res.data.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.class_name}</option>`);
-    }
-  },
-
-  // ==========================================
-  // 4. ADMIN FUNKSIYALARI
-  // ==========================================
-  setupEventListeners: () => {
-    // Sinf yaratish
-    document.getElementById('form-add-class').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const className = document.getElementById('class-name').value;
-
-      app.toggleLoader(true);
-      const res = await API.createClass(className, app.currentUser.id);
-      app.toggleLoader(false);
-
-      if (res.success) {
-        tg.showAlert("Sinf muvaffaqiyatli yaratildi!");
-        document.getElementById('form-add-class').reset();
-        app.showScreen('screen-admin-menu');
-      } else tg.showAlert("Xatolik: " + res.error);
-    });
-
-    // O'quvchi rasmini ko'rish (Preview)
-    document.getElementById('student-photo').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => document.getElementById('preview-photo').src = e.target.result;
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // O'quvchi qo'shish
-    document.getElementById('form-add-student').addEventListener('submit', app.submitNewStudent);
-  },
-
-  // O'qituvchilarni ko'rish
-  loadTeachers: async () => {
-    app.toggleLoader(true);
-    const res = await API.getTeachers();
-    app.toggleLoader(false);
-
-    if(res.success) {
-      const cont = document.getElementById('teachers-container');
-      cont.innerHTML = '';
-      if(res.data.length === 0) cont.innerHTML = "<p>O'qituvchilar hali yo'q.</p>";
-
-      res.data.forEach(t => {
-        cont.innerHTML += `
-          <div class="student-card">
-            <img src="${t.photo_url || 'https://via.placeholder.com/60'}" alt="">
-            <div class="info">
-              <h4>${t.full_name}</h4>
-              <p><i class="fa-solid fa-users"></i> Sinf: ${t.class_name}</p>
-              <p><i class="fa-solid fa-phone"></i> ${t.phone}</p>
-              <p><i class="fa-solid fa-map-marker-alt"></i> ${t.address}</p>
-              <span class="badge">Login: ${t.username}</span>
-            </div>
-          </div>
-        `;
-      });
-      app.showScreen('screen-teachers-list');
-    }
-  },
-
-  // Sinf ro'yxatini yuklash (O'quvchi qo'shish uchun)
-  loadClassesAndShowAddStudent: async () => {
-    app.toggleLoader(true);
-    const res = await API.getClasses();
-    app.toggleLoader(false);
-
-    if (res.success) {
-      const select = document.getElementById('student-class');
-      select.innerHTML = '<option value="">Sinfni tanlang</option>';
-      res.data.forEach(cls => {
-        select.innerHTML += `<option value="${cls.id}" data-name="${cls.class_name}">${cls.class_name}</option>`;
-      });
-      app.showScreen('screen-add-student');
-    }
-  },
-
-  addCertificateField: () => {
-    const container = document.getElementById('certificates-container');
-    const div = document.createElement('div');
-    div.className = 'certificate-group';
-    div.innerHTML = `
-      <input type="text" class="cert-name" placeholder="Sertifikat nomi (IELTS, CEFR)">
-      <input type="text" class="cert-level" placeholder="Darajasi (B2, C1)">
-      <input type="number" class="cert-percent" placeholder="Foizi">
-      <button type="button" class="remove-cert-btn" onclick="this.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>
-      <hr>
-    `;
-    container.appendChild(div);
-  },
-
-  submitNewStudent: async (e) => {
-    e.preventDefault();
-    const photoFile = document.getElementById('student-photo').files[0];
-    if (!photoFile) return tg.showAlert("O'quvchi rasmini tanlang!");
-
-    app.toggleLoader(true);
-    const photoUrl = await API.uploadImage(photoFile);
-    if (!photoUrl) {
-      app.toggleLoader(false);
-      return tg.showAlert("Rasmni yuklashda xato!");
-    }
-
-    const certificates = [];
-    document.querySelectorAll('.certificate-group').forEach(group => {
-      certificates.push({
-        name: group.querySelector('.cert-name').value,
-        level: group.querySelector('.cert-level').value,
-        percent: group.querySelector('.cert-percent').value
-      });
-    });
-
-    const classSelect = document.getElementById('student-class');
-    const studentData = {
-      fullName: document.getElementById('student-name').value,
-      photoUrl: photoUrl,
-      classId: classSelect.value,
-      className: classSelect.options[classSelect.selectedIndex].getAttribute('data-name'),
-      permAddress: document.getElementById('perm-address').value,
-      dormAddress: document.getElementById('dorm-address').value,
-      parentPhone: document.getElementById('parent-phone').value,
-      dormPhone: document.getElementById('dorm-phone').value,
-      certificates: certificates
-    };
-
-    const res = await API.createStudent(studentData);
-    app.toggleLoader(false);
-
-    if (res.success) {
-      tg.showAlert("O'quvchi saqlandi!");
-      document.getElementById('form-add-student').reset();
-      document.getElementById('preview-photo').src = 'https://via.placeholder.com/100?text=Rasm';
-      document.getElementById('certificates-container').innerHTML = '';
-      app.showScreen('screen-admin-menu');
-    } else tg.showAlert(res.error);
-  },
-
-  loadAdminReport: async () => {
-    app.toggleLoader(true);
-    const res = await API.getAllStudents();
-    app.toggleLoader(false);
-
-    if (res.success) {
-      app.studentsData = res.data;
-      app.renderStudentsReport(app.studentsData);
-      app.showScreen('screen-admin-report');
-    }
-  },
-
-  renderStudentsReport: (students) => {
-    const container = document.getElementById('report-list');
-    container.innerHTML = '';
-
-    students.forEach(st => {
-      let certsHtml = st.certificates.map(c => `<span class="badge">${c.name} ${c.level}</span>`).join('');
-      container.innerHTML += `
-        <div class="student-card">
-          <img src="${st.photo_url}" alt="">
-          <div class="info">
-            <h4>${st.full_name} (${st.class_name})</h4>
-            <p><i class="fa-solid fa-house-chimney"></i> ${st.permanent_address}</p>
-            <p><i class="fa-solid fa-phone"></i> Ota-ona: ${st.parent_phone}</p>
-            <div class="certs">${certsHtml}</div>
-            <div class="attendance-stats">
-              <span class="sababli">Sababli: ${st.total_absences?.sababli || 0}</span>
-              <span class="sababsiz">Sababsiz: ${st.total_absences?.sababsiz || 0}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-  },
-
-  filterStudents: () => {
-    const text = document.getElementById('search-student').value.toLowerCase();
-    const filtered = app.studentsData.filter(s => s.full_name.toLowerCase().includes(text));
-    app.renderStudentsReport(filtered);
-  },
-
-  // ==========================================
-  // 5. O'QITUVCHI FUNKSIYALARI (DAVOMAT)
-  // ==========================================
-  setupTeacherDashboard: () => {
-    document.getElementById('logged-teacher-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100?text=Ustoz';
-    document.getElementById('logged-teacher-name').innerText = app.currentUser.full_name;
-    document.getElementById('logged-teacher-class').innerText = "Rahbar: " + app.currentUser.class_name;
+  showProfileEdit: () => {
+    document.getElementById('edit-fullname').value = app.currentUser.full_name;
+    document.getElementById('edit-username').value = app.currentUser.username;
+    document.getElementById('edit-password').value = app.currentUser.password;
     
-    document.getElementById('btn-start-attendance').onclick = () => {
-      app.openAttendanceScreen(app.currentUser.class_id, app.currentUser.class_name);
-    };
+    if(app.currentUser.role === 'teacher') {
+      document.getElementById('edit-photo-box').classList.remove('hidden');
+      document.getElementById('edit-preview-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100';
+      document.getElementById('edit-address').parentElement.classList.remove('hidden');
+      document.getElementById('edit-phone').parentElement.classList.remove('hidden');
+      document.getElementById('edit-address').value = app.currentUser.address;
+      document.getElementById('edit-phone').value = app.currentUser.phone;
+    } else {
+      document.getElementById('edit-photo-box').classList.add('hidden');
+      document.getElementById('edit-address').parentElement.classList.add('hidden');
+      document.getElementById('edit-phone').parentElement.classList.add('hidden');
+    }
+    app.showScreen('screen-profile');
+  },
+
+  // =====================================
+  // O'QITUVCHI BO'LIMI
+  // =====================================
+  setupTeacherDashboard: () => {
+    document.getElementById('menu-teacher-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100';
+    document.getElementById('menu-teacher-name').innerText = app.currentUser.full_name;
+    
+    const hasClass = !!app.currentUser.class_id;
+    document.getElementById('menu-teacher-class').innerText = hasClass ? `Sinf: ${app.currentUser.class_name}` : "Sinf yaratilmagan";
+    
+    document.getElementById('btn-t-add-class').style.display = hasClass ? 'none' : 'block';
+    document.getElementById('btn-t-add-student').style.display = hasClass ? 'block' : 'none';
+    document.getElementById('btn-t-attendance').style.display = hasClass ? 'block' : 'none';
 
     app.showScreen('screen-teacher-menu');
   },
 
-  openAttendanceScreen: async (classId, className) => {
-    app.currentClassId = classId;
-    app.currentClassName = className;
-    document.getElementById('attendance-class-title').innerText = className + " - Davomat";
-
-    app.toggleLoader(true);
-    const res = await API.getStudentsByClass(classId);
-    app.toggleLoader(false);
-
-    if (res.success) {
-      const container = document.getElementById('attendance-list');
-      container.innerHTML = '';
-      
-      if(res.data.length === 0) {
-        container.innerHTML = '<p>Sinfda o\'quvchilar yo\'q.</p>';
+  setupTeacherListeners: () => {
+    // Sinf yaratish
+    document.getElementById('form-t-add-class').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('t-class-name').value;
+      app.toggleLoader(true);
+      const res = await API.createClass(name, app.currentUser.id);
+      app.toggleLoader(false);
+      if(res.success) {
+        app.currentUser.class_id = res.classId; app.currentUser.class_name = res.className;
+        localStorage.setItem('leCrayonUser', JSON.stringify(app.currentUser));
+        tg.showAlert("Sinf yaratildi!");
+        app.setupTeacherDashboard();
       }
+    });
 
+    // O'quvchi qo'shish rasm
+    document.getElementById('t-student-photo').addEventListener('change', (e) => {
+      if(e.target.files[0]) {
+        const r = new FileReader(); r.onload = (ev) => document.getElementById('t-preview-photo').src = ev.target.result;
+        r.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    // O'quvchi qo'shish
+    document.getElementById('form-t-add-student').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('t-student-photo').files[0];
+      if (!file) return tg.showAlert("O'quvchi rasmini yuklang!");
+      
+      app.toggleLoader(true);
+      const url = await API.uploadImage(file);
+      if(!url) return app.toggleLoader(false);
+
+      const certs = [];
+      document.querySelectorAll('.certificate-group').forEach(g => {
+        certs.push({
+          name: g.querySelector('.cert-name').value, level: g.querySelector('.cert-level').value, percent: g.querySelector('.cert-percent').value
+        });
+      });
+
+      const data = {
+        fullName: document.getElementById('t-st-name').value, photoUrl: url,
+        classId: app.currentUser.class_id, className: app.currentUser.class_name,
+        permAddress: document.getElementById('t-st-perm').value, dormAddress: document.getElementById('t-st-dorm').value,
+        parentPhone: document.getElementById('t-st-parent').value, dormPhone: document.getElementById('t-st-dormphone').value,
+        certificates: certs
+      };
+
+      const res = await API.createStudent(data);
+      app.toggleLoader(false);
+      if(res.success) {
+        tg.showAlert("O'quvchi qo'shildi!");
+        document.getElementById('form-t-add-student').reset();
+        document.getElementById('t-preview-photo').src = 'https://via.placeholder.com/100';
+        document.getElementById('t-certs-container').innerHTML = '';
+        app.setupTeacherDashboard();
+      }
+    });
+  },
+
+  addCertificateField: () => {
+    const c = document.getElementById('t-certs-container');
+    const div = document.createElement('div'); div.className = 'certificate-group custom-form';
+    div.innerHTML = `
+      <input type="text" class="cert-name" placeholder="Sertifikat (IELTS)">
+      <input type="text" class="cert-level" placeholder="Daraja (B2)">
+      <input type="number" class="cert-percent" placeholder="Foiz">
+      <button type="button" style="padding:10px; background:var(--danger); color:white; border:none; border-radius:8px;" onclick="this.parentElement.remove()">O'chirish</button>
+      <hr style="margin: 10px 0; border:0; height:1px; background:var(--border);">
+    `;
+    c.appendChild(div);
+  },
+
+  // Davomatni ochish
+  openAttendance: async () => {
+    app.toggleLoader(true);
+    const res = await API.getStudentsByClass(app.currentUser.class_id);
+    app.toggleLoader(false);
+    if(res.success) {
+      const c = document.getElementById('attendance-list'); c.innerHTML = '';
+      if(res.data.length === 0) return c.innerHTML = "<p>O'quvchilar yo'q.</p>";
+      
       res.data.forEach(st => {
-        container.innerHTML += `
-          <div class="attendance-item">
-            <div class="student-info-row">
-              <img src="${st.photo_url}" alt="">
-              <span>${st.full_name}</span>
-            </div>
+        c.innerHTML += `
+          <div class="attendance-item" id="att-box-${st.id}">
+            <div class="student-info-row"><img src="${st.photo_url}" alt=""><span>${st.full_name}</span></div>
             <div class="radio-group">
-              <label class="radio-btn keldi"><input type="radio" name="att_${st.id}" value="keldi" checked> Keldi</label>
-              <label class="radio-btn sababli"><input type="radio" name="att_${st.id}" value="sababli"> Sababli</label>
-              <label class="radio-btn sababsiz"><input type="radio" name="att_${st.id}" value="sababsiz"> Sababsiz</label>
+              <label class="radio-btn keldi"><input type="radio" name="att_${st.id}" value="keldi" checked onchange="app.toggleComment('${st.id}')"> Keldi</label>
+              <label class="radio-btn sababli"><input type="radio" name="att_${st.id}" value="sababli" onchange="app.toggleComment('${st.id}')"> Sababli</label>
+              <label class="radio-btn sababsiz"><input type="radio" name="att_${st.id}" value="sababsiz" onchange="app.toggleComment('${st.id}')"> Sababsiz</label>
             </div>
+            <input type="text" id="comment_${st.id}" class="comment-input custom-form" placeholder="Sababini yozing..." style="margin-top:10px; width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
           </div>
         `;
       });
+      document.getElementById('att-class-title').innerText = `${app.currentUser.class_name} - Davomat`;
       app.showScreen('screen-attendance');
     }
+  },
+
+  toggleComment: (id) => {
+    const box = document.getElementById(`att-box-${id}`);
+    const r = document.querySelector(`input[name="att_${id}"]:checked`).value;
+    if(r === 'sababli') box.classList.add('show-comment');
+    else box.classList.remove('show-comment');
   },
 
   submitAttendance: async () => {
     const items = document.querySelectorAll('.attendance-item');
     const records = [];
-
     items.forEach(item => {
-      const radios = item.querySelectorAll('input[type="radio"]');
-      let status = 'keldi';
-      let studentId = '';
-      
-      radios.forEach(radio => {
-        studentId = radio.name.replace('att_', '');
-        if (radio.checked) status = radio.value;
-      });
-
-      if (status !== 'keldi') {
-        records.push({ studentId, status });
-      }
+      const id = item.id.replace('att-box-', '');
+      const status = document.querySelector(`input[name="att_${id}"]:checked`).value;
+      const comment = document.getElementById(`comment_${id}`).value;
+      if (status !== 'keldi') records.push({ studentId: id, status, comment: status === 'sababli' ? comment : '' });
     });
 
-    const attendanceData = {
-      classId: app.currentClassId,
-      className: app.currentClassName,
-      teacherId: app.currentUser.id,
-      records: records
-    };
-
     app.toggleLoader(true);
-    const res = await API.saveAttendance(attendanceData);
+    const res = await API.saveAttendance({
+      classId: app.currentUser.class_id, className: app.currentUser.class_name, teacherId: app.currentUser.id,
+      date: new Date().toISOString().split('T')[0], records
+    });
+    app.toggleLoader(false);
+    if(res.success) { tg.showAlert("Davomat saqlandi!"); app.setupTeacherDashboard(); }
+  },
+
+  // =====================================
+  // ADMIN BO'LIMI
+  // =====================================
+  
+  // 1. Sinflar Statistikasi
+  adminLoadClasses: async () => {
+    const date = new Date().toISOString().split('T')[0];
+    app.toggleLoader(true);
+    const res = await API.getClassesStats(date);
     app.toggleLoader(false);
 
-    if (res.success) {
-      tg.showAlert("Davomat muvaffaqiyatli saqlandi!");
-      app.showScreen('screen-teacher-menu');
-    } else tg.showAlert("Xatolik: " + res.error);
-  }
+    if(res.success) {
+      const c = document.getElementById('admin-classes-list'); c.innerHTML = '';
+      res.data.forEach(cls => {
+        c.innerHTML += `
+          <div class="student-card" style="cursor:pointer;" onclick="app.adminOpenClass('${cls.id}', '${cls.class_name}')">
+            <div class="info" style="width:100%;">
+              <h4>${cls.class_name}</h4>
+              <p><i class="fa-solid fa-user-tie"></i> Ustoz: ${cls.teacher_name}</p>
+              <div style="margin-top:10px;">
+                <span class="badge">Jami: ${cls.total_students}</span>
+                <span class="badge green">Keldi: ${cls.present}</span>
+                <span class="badge red">Kelmagan: ${cls.absent}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      app.showScreen('screen-admin-classes');
+    }
+  },
+
+  // Sinf ustiga bosganda
+  adminOpenClass: async (classId, className) => {
+    app.toggleLoader(true);
+    const res = await API.getStudentsByClass(classId);
+    app.toggleLoader(false);
+    if(res.success) {
+      app.currentAdminClassView = res.data;
+      document.getElementById('admin-class-title').innerText = `${className} O'quvchilari`;
+      
+      // Hozirgi kungi davomatni ham tortib qizil ramkaga olamiz
+      const date = new Date().toISOString().split('T')[0];
+      const mon = await API.getMonitoring(date);
+      const absentIds = mon.success ? mon.data.map(m => m.id) : [];
+
+      const c = document.getElementById('admin-class-students'); c.innerHTML = '';
+      res.data.forEach(st => {
+        const isAbsent = absentIds.includes(st.id);
+        c.innerHTML += `
+          <div class="student-card ${isAbsent ? 'absent-border' : ''}" style="cursor:pointer;" onclick="app.showStudentDetails('${st.id}')">
+            <img src="${st.photo_url}" alt="">
+            <div class="info">
+              <h4>${st.full_name}</h4>
+              <p><i class="fa-solid fa-phone"></i> Ota-ona: ${st.parent_phone}</p>
+            </div>
+          </div>
+        `;
+      });
+      app.showScreen('screen-admin-class-details');
+    }
+  },
+
+  // 2. O'qituvchilar Ro'yxati
+  adminLoadTeachers: async () => {
+    app.toggleLoader(true);
+    const res = await API.getTeachers();
+    app.toggleLoader(false);
+    if(res.success) {
+      app.studentsData = res.data; // kesh
+      const c = document.getElementById('admin-teachers-list'); c.innerHTML = '';
+      res.data.forEach(t => {
+        c.innerHTML += `
+          <div class="student-card" style="cursor:pointer;" onclick="app.showTeacherDetails('${t.id}')">
+            <img src="${t.photo_url || 'https://via.placeholder.com/100'}" alt="">
+            <div class="info">
+              <h4>${t.full_name}</h4>
+              <p><i class="fa-solid fa-users"></i> Sinf: ${t.class_name || "Yo'q"}</p>
+            </div>
+          </div>
+        `;
+      });
+      app.showScreen('screen-admin-teachers');
+    }
+  },
+
+  // 3. Davomat Monitoring
+  adminLoadMonitoring: async () => {
+    let date = document.getElementById('monitoring-date').value;
+    if(!date) {
+      date = new Date().toISOString().split('T')[0];
+      document.getElementById('monitoring-date').value = date;
+    }
+    
+    app.toggleLoader(true);
+    const res = await API.getMonitoring(date);
+    app.toggleLoader(false);
+
+    if(res.success) {
+      const c = document.getElementById('admin-monitoring-list'); c.innerHTML = '';
+      if(res.data.length === 0) c.innerHTML = `<p style="text-align:center; padding:20px;">Bu sanada hamma kelgan.</p>`;
+      
+      res.data.forEach(st => {
+        c.innerHTML += `
+          <div class="student-card absent-border">
+            <img src="${st.photo_url || 'https://via.placeholder.com/60'}" alt="">
+            <div class="info">
+              <h4>${st.full_name} (${st.class_name})</h4>
+              <p><i class="fa-solid fa-phone"></i> Ota-ona: ${st.parent_phone}</p>
+              <p><span class="badge ${st.status === 'sababli' ? 'warning' : 'red'}">${st.status.toUpperCase()}</span> ${st.comment ? ' - ' + st.comment : ''}</p>
+            </div>
+          </div>
+        `;
+      });
+      app.showScreen('screen-admin-monitoring');
+    }
+  },
+
+  // =====================================
+  // MODALLAR
+  // =====================================
+  showStudentDetails: (id) => {
+    const st = app.currentAdminClassView.find(s => s.id === id);
+    if(!st) return;
+    let certs = st.certificates.map(c => `<span class="badge">${c.name} ${c.level} (${c.percent}%)</span>`).join(' ');
+    
+    document.getElementById('modal-body').innerHTML = `
+      <img src="${st.photo_url}" class="modal-info-img" alt="">
+      <h3 style="text-align:center; margin-bottom:20px;">${st.full_name}</h3>
+      <div class="modal-data-row"><span>Sinf</span> <strong>${st.class_name}</strong></div>
+      <div class="modal-data-row"><span>Doimiy manzil</span> <strong>${st.permanent_address}</strong></div>
+      <div class="modal-data-row"><span>Yotoqxona</span> <strong>${st.dormitory_address || '-'}</strong></div>
+      <div class="modal-data-row"><span>Ota-ona telfoni</span> <strong>${st.parent_phone}</strong></div>
+      <div class="modal-data-row"><span>Yotoqxona telfoni</span> <strong>${st.dormitory_phone || '-'}</strong></div>
+      <div class="modal-data-row" style="flex-direction:column; gap:5px;"><span>Sertifikatlar</span> <div>${certs || 'Yo\'q'}</div></div>
+      <div class="modal-data-row"><span>Qoldirgan (Sababli)</span> <strong style="color:var(--warning);">${st.total_absences?.sababli || 0} marta</strong></div>
+      <div class="modal-data-row"><span>Qoldirgan (Sababsiz)</span> <strong style="color:var(--danger);">${st.total_absences?.sababsiz || 0} marta</strong></div>
+    `;
+    document.getElementById('details-modal').classList.remove('hidden');
+  },
+
+  showTeacherDetails: (id) => {
+    const t = app.studentsData.find(s => s.id === id); // Keshdan olamiz
+    document.getElementById('modal-body').innerHTML = `
+      <img src="${t.photo_url || 'https://via.placeholder.com/100'}" class="modal-info-img" alt="">
+      <h3 style="text-align:center; margin-bottom:20px;">${t.full_name}</h3>
+      <div class="modal-data-row"><span>Sinf</span> <strong>${t.class_name || "Biriktirilmagan"}</strong></div>
+      <div class="modal-data-row"><span>Telefon</span> <strong>${t.phone}</strong></div>
+      <div class="modal-data-row"><span>Yashash manzili</span> <strong>${t.address}</strong></div>
+      <div class="modal-data-row"><span>Login</span> <strong>${t.username}</strong></div>
+    `;
+    document.getElementById('details-modal').classList.remove('hidden');
+  },
+
+  closeModal: () => document.getElementById('details-modal').classList.add('hidden')
 };
 
-// HTML yuklanganda dasturni ishga tushirish
 document.addEventListener('DOMContentLoaded', app.init);
