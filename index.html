@@ -3,18 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Le Crayon - Davomat</title>
+  <title>Le Crayon - CRM</title>
+  
+  <!-- Telegram Web App API -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome (Ikonkalar uchun) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Asosiy CSS -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+  <!-- LOADING ANIMATSIYASI -->
   <div id="loader" class="loader-overlay hidden">
-    <div class="spinner"></div><p>Yuklanmoqda...</p>
+    <div class="spinner"></div>
+    <p>Yuklanmoqda...</p>
   </div>
 
+  <!-- ASOSIY HEADER -->
   <header class="app-header">
     <button id="back-btn" class="back-btn hidden" onclick="app.handleBackBtn()">
       <i class="fa-solid fa-chevron-left"></i> Ortga
@@ -27,188 +36,259 @@
 
   <main id="app-content">
 
-    <!-- LOGIN -->
+    <!-- ============================================== -->
+    <!-- 1. AVTORIZATSIYA (LOGIN) -->
+    <!-- ============================================== -->
     <section id="screen-login" class="screen active fade-in">
       <div class="role-container">
         <h2>Tizimga kirish</h2>
+        <p>Login va parolingizni kiriting</p>
         <form id="form-login" class="custom-form">
-          <input type="text" id="login-username" required placeholder="Login">
+          <input type="text" id="login-username" required placeholder="Login (masalan: admin1234)">
           <input type="password" id="login-password" required placeholder="Parol">
           <button type="submit" class="primary-btn">Kirish</button>
         </form>
       </div>
     </section>
 
-    <!-- ADMIN SETUP -->
-    <section id="screen-setup-admin" class="screen hidden">
+    <!-- ============================================== -->
+    <!-- 2. PROFIL YARATISH (BIRINCHI KIRISHDAGI SETUP) -->
+    <!-- ============================================== -->
+    
+    <!-- Admin Setup -->
+    <section id="screen-setup-admin" class="screen hidden slide-up">
       <h2 class="section-title">Admin Profilini Yaratish</h2>
+      <p class="subtitle">Tizimga birinchi marta kirganingiz uchun shaxsiy profilingizni to'ldiring.</p>
       <form id="form-setup-admin" class="custom-form">
         <input type="text" id="admin-fullname" required placeholder="To'liq ismingiz">
-        <input type="text" id="admin-new-login" required placeholder="Yangi login">
-        <input type="password" id="admin-new-password" required placeholder="Yangi parol">
+        <input type="text" id="admin-new-login" required placeholder="Yangi xavfsiz login">
+        <input type="password" id="admin-new-password" required placeholder="Yangi xavfsiz parol">
         <button type="submit" class="primary-btn">Saqlash</button>
       </form>
     </section>
 
-    <!-- O'QITUVCHI SETUP -->
-    <section id="screen-setup-teacher" class="screen hidden">
+    <!-- O'qituvchi Setup -->
+    <section id="screen-setup-teacher" class="screen hidden slide-up">
       <h2 class="section-title">O'qituvchi Profilini Yaratish</h2>
+      <p class="subtitle">Shaxsiy ma'lumotlaringizni kiriting.</p>
+      
       <form id="form-setup-teacher" class="custom-form">
+        <!-- Rasm yuklash (accept="image/*" kamera va galereyani chaqiradi) -->
         <div class="photo-upload-container">
-          <img id="teacher-preview-photo" src="https://via.placeholder.com/100" alt="">
+          <img id="teacher-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
           <input type="file" id="teacher-photo" accept="image/*" required>
           <label for="teacher-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera</label>
         </div>
-        <input type="text" id="teacher-fullname" required placeholder="F.I.SH">
+
+        <input type="text" id="teacher-fullname" required placeholder="F.I.SH (To'liq ismingiz)">
         <input type="text" id="teacher-address" required placeholder="Yashash manzili">
-        <input type="tel" id="teacher-phone" required placeholder="Telefon raqam">
-        <input type="text" id="teacher-new-login" required placeholder="Shaxsiy login">
+        <input type="tel" id="teacher-phone" required placeholder="Telefon raqam (+998...)">
+        
+        <div class="divider">Akkaunt Ma'lumotlari</div>
+        <input type="text" id="teacher-new-login" required placeholder="Shaxsiy login o'ylab toping">
         <input type="password" id="teacher-new-password" required placeholder="Shaxsiy parol">
+        
         <button type="submit" class="primary-btn">Saqlash</button>
       </form>
     </section>
 
-    <!-- ADMIN MENYU -->
-    <section id="screen-admin-menu" class="screen hidden">
+    <!-- ============================================== -->
+    <!-- 3. ADMIN BO'LIMI -->
+    <!-- ============================================== -->
+    <section id="screen-admin-menu" class="screen hidden fade-in">
       <h2 class="section-title">Admin Paneli</h2>
       <div class="menu-grid">
         <div class="menu-card" onclick="app.adminLoadClasses()">
-          <i class="fa-solid fa-layer-group"></i><h3>Sinflar</h3>
+          <i class="fa-solid fa-layer-group"></i>
+          <h3>Sinflar</h3>
         </div>
         <div class="menu-card" onclick="app.adminLoadTeachers()">
-          <i class="fa-solid fa-chalkboard-user"></i><h3>O'qituvchilar</h3>
+          <i class="fa-solid fa-chalkboard-user"></i>
+          <h3>O'qituvchilar</h3>
         </div>
         <div class="menu-card" onclick="app.adminLoadMonitoring()">
-          <i class="fa-solid fa-chart-pie"></i><h3>Davomat</h3>
+          <i class="fa-solid fa-chart-pie"></i>
+          <h3>Davomat Monitoringi</h3>
         </div>
         <div class="menu-card" onclick="app.showProfileEdit()">
-          <i class="fa-solid fa-user-gear"></i><h3>Profil</h3>
+          <i class="fa-solid fa-user-gear"></i>
+          <h3>Profil (Tahrirlash)</h3>
         </div>
       </div>
     </section>
 
-    <!-- O'QITUVCHI MENYU -->
-    <section id="screen-teacher-menu" class="screen hidden">
+    <!-- (ADMIN) Sinflar ro'yxati -->
+    <section id="screen-admin-classes" class="screen hidden slide-up">
+      <h2 class="section-title">Barcha Sinflar Statistikasi</h2>
+      <div id="admin-classes-list" class="report-list">
+        <!-- JS orqali to'ldiriladi -->
+      </div>
+    </section>
+
+    <!-- (ADMIN) Muayyan Sinf O'quvchilari -->
+    <section id="screen-admin-class-details" class="screen hidden slide-up">
+      <h2 class="section-title" id="admin-class-title">Sinf O'quvchilari</h2>
+      <p class="subtitle">Qizil ramkadagi o'quvchilar bugun darsga kelmagan.</p>
+      <div id="admin-class-students" class="report-list">
+        <!-- JS orqali to'ldiriladi -->
+      </div>
+    </section>
+
+    <!-- (ADMIN) O'qituvchilar -->
+    <section id="screen-admin-teachers" class="screen hidden slide-up">
+      <h2 class="section-title">Maktab O'qituvchilari</h2>
+      <div id="admin-teachers-list" class="report-list">
+        <!-- JS orqali to'ldiriladi -->
+      </div>
+    </section>
+
+    <!-- (ADMIN) Davomat Monitoringi -->
+    <section id="screen-admin-monitoring" class="screen hidden slide-up">
+      <h2 class="section-title">Davomat Monitoringi</h2>
+      <p class="subtitle">Sanani tanlang va yo'q o'quvchilar ro'yxatini ko'ring.</p>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <input type="date" id="monitoring-date" onchange="app.adminLoadMonitoring()">
+      </div>
+      <div id="admin-monitoring-list" class="report-list">
+        <!-- JS orqali to'ldiriladi -->
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- 4. O'QITUVCHI BO'LIMI -->
+    <!-- ============================================== -->
+    <section id="screen-teacher-menu" class="screen hidden fade-in">
       <div class="teacher-profile-header">
-        <img id="menu-teacher-photo" src="" alt="">
+        <img id="menu-teacher-photo" src="" alt="Ustoz">
         <div>
-          <h2 id="menu-teacher-name">Ustoz</h2>
+          <h2 id="menu-teacher-name">Ustoz Ismi</h2>
           <p id="menu-teacher-class" class="badge">Sinf yo'q</p>
         </div>
       </div>
+      
       <div class="menu-grid" style="margin-top: 20px;">
+        <!-- Faqat sinfi yo'qlarga ko'rinadi -->
         <div class="menu-card" id="btn-t-add-class" onclick="app.showScreen('screen-t-add-class')">
-          <i class="fa-solid fa-plus-square"></i><h3>Sinf Yaratish</h3>
+          <i class="fa-solid fa-plus-square"></i>
+          <h3>Sinf Yaratish</h3>
         </div>
-        <div class="menu-card" id="btn-t-add-student" onclick="app.showScreen('screen-t-add-student')">
-          <i class="fa-solid fa-user-plus"></i><h3>O'quvchi Qo'shish</h3>
+        
+        <!-- Sinfi borlarga ko'rinadi -->
+        <div class="menu-card" id="btn-t-add-student" onclick="app.showScreen('screen-t-add-student')" style="display:none;">
+          <i class="fa-solid fa-user-plus"></i>
+          <h3>O'quvchi Qo'shish</h3>
         </div>
-        <div class="menu-card" id="btn-t-attendance" onclick="app.openAttendance()">
-          <i class="fa-solid fa-clipboard-user"></i><h3>Davomat</h3>
+        
+        <div class="menu-card" id="btn-t-attendance" onclick="app.openAttendance()" style="display:none;">
+          <i class="fa-solid fa-clipboard-user"></i>
+          <h3>Davomat Qilish</h3>
         </div>
+        
         <div class="menu-card" onclick="app.showProfileEdit()">
-          <i class="fa-solid fa-user-gear"></i><h3>Profil</h3>
+          <i class="fa-solid fa-user-gear"></i>
+          <h3>Mening Profilim</h3>
         </div>
       </div>
     </section>
 
-    <!-- PROFIL TAHRIRLASH (Umumiy) -->
-    <section id="screen-profile" class="screen hidden">
-      <h2 class="section-title">Profilni Tahrirlash</h2>
-      <form id="form-edit-profile" class="custom-form">
-        <div id="edit-photo-box" class="photo-upload-container hidden">
-          <img id="edit-preview-photo" src="" alt="">
-          <input type="file" id="edit-photo" accept="image/*">
-          <label for="edit-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera</label>
-        </div>
-        <input type="text" id="edit-fullname" required placeholder="F.I.SH">
-        <input type="text" id="edit-address" placeholder="Manzil">
-        <input type="tel" id="edit-phone" placeholder="Telefon">
-        <input type="text" id="edit-username" required placeholder="Login">
-        <input type="text" id="edit-password" required placeholder="Parol">
-        <button type="submit" class="primary-btn">Yangilash</button>
-      </form>
-    </section>
-
-    <!-- (TEACHER) SINF YARATISH -->
-    <section id="screen-t-add-class" class="screen hidden">
+    <!-- (TEACHER) Sinf Yaratish -->
+    <section id="screen-t-add-class" class="screen hidden slide-up">
       <h2 class="section-title">O'z Sinfingizni Yarating</h2>
       <form id="form-t-add-class" class="custom-form">
         <input type="text" id="t-class-name" required placeholder="Sinf nomi (masalan: 10-A)">
-        <button type="submit" class="primary-btn">Yaratish</button>
+        <button type="submit" class="primary-btn">Sinfni Yaratish</button>
       </form>
     </section>
 
-    <!-- (TEACHER) O'QUVCHI QO'SHISH -->
-    <section id="screen-t-add-student" class="screen hidden">
-      <h2 class="section-title">O'quvchi Qo'shish</h2>
+    <!-- (TEACHER) O'quvchi Qo'shish -->
+    <section id="screen-t-add-student" class="screen hidden slide-up">
+      <h2 class="section-title">Yangi O'quvchi Qo'shish</h2>
       <form id="form-t-add-student" class="custom-form">
         <div class="photo-upload-container">
-          <img id="t-preview-photo" src="https://via.placeholder.com/100" alt="">
+          <img id="t-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
           <input type="file" id="t-student-photo" accept="image/*" required>
           <label for="t-student-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera</label>
         </div>
-        <input type="text" id="t-st-name" required placeholder="To'liq ism">
+        <input type="text" id="t-st-name" required placeholder="To'liq ism (F.I.SH)">
         <input type="text" id="t-st-perm" required placeholder="Doimiy yashash manzili">
-        <input type="text" id="t-st-dorm" placeholder="Yotoqxona manzili">
-        <input type="tel" id="t-st-parent" required placeholder="Ota-ona telefoni">
+        <input type="text" id="t-st-dorm" placeholder="Yotoqxona manzili (agar bo'lsa)">
+        <input type="tel" id="t-st-parent" required placeholder="Ota-ona telefon raqami">
         <input type="tel" id="t-st-dormphone" placeholder="Yotoqxona mas'uli telefoni">
         
         <div class="certificates-section">
           <h3>Sertifikatlar</h3>
           <div id="t-certs-container"></div>
-          <button type="button" class="secondary-btn" onclick="app.addCertificateField()"><i class="fa-solid fa-plus"></i> Qo'shish</button>
+          <button type="button" class="secondary-btn" onclick="app.addCertificateField()">
+            <i class="fa-solid fa-plus"></i> Sertifikat Qo'shish
+          </button>
         </div>
-        <button type="submit" class="primary-btn">Saqlash</button>
+        <button type="submit" class="primary-btn">O'quvchini Saqlash</button>
       </form>
     </section>
 
-    <!-- (TEACHER) DAVOMAT -->
-    <section id="screen-attendance" class="screen hidden">
+    <!-- (TEACHER) Davomat Qilish -->
+    <section id="screen-attendance" class="screen hidden slide-up">
       <h2 class="section-title" id="att-class-title">Davomat</h2>
       <form id="form-attendance">
-        <div id="attendance-list" class="attendance-list"></div>
-        <button type="button" class="primary-btn submit-btn" onclick="app.submitAttendance()">Saqlash</button>
+        <div id="attendance-list" class="attendance-list">
+          <!-- JS orqali to'ldiriladi -->
+        </div>
+        <button type="button" class="primary-btn submit-btn" onclick="app.submitAttendance()">
+          Davomatni Saqlash
+        </button>
       </form>
     </section>
 
-    <!-- (ADMIN) SINFLAR -->
-    <section id="screen-admin-classes" class="screen hidden">
-      <h2 class="section-title">Barcha Sinflar</h2>
-      <div id="admin-classes-list" class="report-list"></div>
+
+    <!-- ============================================== -->
+    <!-- 5. UMUMIY PROFIL TAHRIRLASH EKRANI (Admin & O'qituvchi) -->
+    <!-- ============================================== -->
+    <section id="screen-profile" class="screen hidden slide-up">
+      <h2 class="section-title">Profilni Tahrirlash</h2>
+      <form id="form-edit-profile" class="custom-form">
+        
+        <div id="edit-photo-box" class="photo-upload-container hidden">
+          <img id="edit-preview-photo" src="" alt="">
+          <input type="file" id="edit-photo" accept="image/*">
+          <label for="edit-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera</label>
+        </div>
+
+        <input type="text" id="edit-fullname" required placeholder="F.I.SH">
+        
+        <div class="form-group hidden">
+          <input type="text" id="edit-address" placeholder="Manzil">
+        </div>
+        
+        <div class="form-group hidden">
+          <input type="tel" id="edit-phone" placeholder="Telefon">
+        </div>
+        
+        <div class="divider">Akkauntni o'zgartirish</div>
+        <input type="text" id="edit-username" required placeholder="Login">
+        <input type="text" id="edit-password" required placeholder="Parol">
+        
+        <button type="submit" class="primary-btn">Ma'lumotlarni Yangilash</button>
+      </form>
     </section>
 
-    <!-- (ADMIN) SINF ICHIDAGI O'QUVCHILAR -->
-    <section id="screen-admin-class-details" class="screen hidden">
-      <h2 class="section-title" id="admin-class-title">Sinf O'quvchilari</h2>
-      <div id="admin-class-students" class="report-list"></div>
-    </section>
 
-    <!-- (ADMIN) O'QITUVCHILAR -->
-    <section id="screen-admin-teachers" class="screen hidden">
-      <h2 class="section-title">O'qituvchilar</h2>
-      <div id="admin-teachers-list" class="report-list"></div>
-    </section>
-
-    <!-- (ADMIN) DAVOMAT MONITORING -->
-    <section id="screen-admin-monitoring" class="screen hidden">
-      <h2 class="section-title">Davomat Monitoringi</h2>
-      <div class="form-group" style="margin-bottom: 20px;">
-        <input type="date" id="monitoring-date" onchange="app.adminLoadMonitoring()">
-      </div>
-      <div id="admin-monitoring-list" class="report-list"></div>
-    </section>
-
-    <!-- MODAL: TO'LIQ MA'LUMOT (O'quvchi/O'qituvchi uchun) -->
+    <!-- ============================================== -->
+    <!-- 6. MODAL (O'quvchi yoki O'qituvchi to'liq ma'lumoti uchun) -->
+    <!-- ============================================== -->
     <div id="details-modal" class="modal-overlay hidden">
       <div class="modal-content">
-        <button class="close-modal" onclick="app.closeModal()"><i class="fa-solid fa-xmark"></i></button>
-        <div id="modal-body"></div>
+        <button class="close-modal" onclick="app.closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div id="modal-body">
+          <!-- JS orqali kartochka ichidagi ma'lumotlar tushadi -->
+        </div>
       </div>
     </div>
 
   </main>
   
+  <!-- Skriptlar -->
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
