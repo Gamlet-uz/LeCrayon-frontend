@@ -2,7 +2,7 @@
    ASOSIY SOZLAMALAR VA TELEGRAM MAVZULARI
    ========================================================= */
 :root {
-  /* Telegram Web App ranglari (agar bo'lmasa, standart oq mavzu) */
+  /* Telegram Web App avtomatik ranglari */
   --bg-color: var(--tg-theme-bg-color, #ffffff);
   --text-color: var(--tg-theme-text-color, #222222);
   --hint-color: var(--tg-theme-hint-color, #999999);
@@ -11,7 +11,7 @@
   --primary-text: var(--tg-theme-button-text-color, #ffffff);
   --secondary-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
   
-  /* Maxsus ranglar */
+  /* Holat ranglari */
   --success: #34c759;
   --warning: #ff9500;
   --danger: #ff3b30;
@@ -35,7 +35,7 @@ body {
 }
 
 /* =========================================================
-   ANIMATSIYALAR VA UTILITY KLASLAR
+   UTILITY VA ANIMATSIYA KLASLARI
    ========================================================= */
 .hidden { display: none !important; }
 
@@ -56,7 +56,7 @@ body {
 .fade-in { transform: scale(0.98); }
 
 /* =========================================================
-   HEADER VA YUKLANISH (LOADER)
+   HEADER VA LOADER
    ========================================================= */
 .app-header {
   display: flex;
@@ -70,17 +70,19 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* Ortga tugmasi */
 .back-btn {
   position: absolute;
   left: 20px;
   background: none;
   border: none;
-  color: var(--link-color);
+  color: var(--primary-color);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 5px;
+  cursor: pointer;
 }
 
 .logo-title {
@@ -88,7 +90,22 @@ body {
   font-weight: 700;
 }
 
-/* Loader */
+/* Log Out (Chiqish) tugmasi - Yuqori o'ng burchak, Qizil rangda */
+.logout-btn {
+  position: absolute;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 22px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.logout-btn:active {
+  opacity: 0.5;
+}
+
+/* Loader Overlay */
 .loader-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -112,7 +129,7 @@ body {
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
 /* =========================================================
-   ROL TANLASH (BOSH SAHIFA)
+   ROLLAR (LOGIN EKRANI)
    ========================================================= */
 .role-container {
   text-align: center;
@@ -121,67 +138,81 @@ body {
 .role-container h2 { margin-bottom: 10px; }
 .role-container p { color: var(--hint-color); margin-bottom: 30px; }
 
-.role-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  width: 100%;
-  padding: 20px;
-  margin-bottom: 15px;
-  border-radius: var(--card-radius);
-  border: none;
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
-  transition: transform 0.1s;
-}
-.role-btn:active { transform: scale(0.95); }
-.teacher-btn { background: linear-gradient(135deg, #3390ec, #1c73c9); }
-.admin-btn { background: linear-gradient(135deg, #34c759, #248a3d); }
-.role-btn i { font-size: 24px; }
-
 /* =========================================================
-   MENYU KARTALARI
+   MENYU VA KARTALAR (GRID LAYOUT)
    ========================================================= */
 .section-title {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   font-size: 20px;
 }
+.subtitle {
+  font-size: 14px;
+  color: var(--hint-color);
+  margin-bottom: 20px;
+}
+.divider {
+  text-align: center;
+  margin: 10px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hint-color);
+  text-transform: uppercase;
+}
+
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 15px;
 }
 .menu-card {
   background-color: var(--secondary-bg);
-  padding: 20px 15px;
+  padding: 20px 10px;
   border-radius: var(--card-radius);
   text-align: center;
   border: 1px solid var(--border);
   transition: transform 0.1s, background-color 0.2s;
+  cursor: pointer;
 }
 .menu-card:active { transform: scale(0.95); background-color: var(--border); }
-.menu-card i { font-size: 30px; color: var(--primary-color); margin-bottom: 10px; }
-.menu-card h3 { font-size: 15px; font-weight: 600; }
+.menu-card i { font-size: 28px; color: var(--primary-color); margin-bottom: 10px; }
+.menu-card h3 { font-size: 14px; font-weight: 600; }
 
 /* =========================================================
-   FORMALAR VA KIRITISH MAYDONLARI
+   O'QITUVCHI PROFILI HEADER (TEACHER MENU)
    ========================================================= */
-.custom-form { display: flex; flex-direction: column; gap: 15px; }
+.teacher-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+.teacher-profile-header img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.teacher-profile-header h2 { font-size: 18px; margin-bottom: 5px; }
+
+/* =========================================================
+   FORMALAR, INPUTLAR, TUGMALAR
+   ========================================================= */
+.custom-form { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 14px; font-weight: 500; color: var(--hint-color); }
-.form-group input, .form-group select {
+
+.custom-form input, .custom-form select, .form-group input, .form-group select {
   width: 100%;
   padding: 12px 15px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background-color: var(--secondary-bg);
   color: var(--text-color);
-  font-size: 16px;
+  font-size: 15px;
   outline: none;
 }
-.form-group input:focus, .form-group select:focus {
+.custom-form input:focus, .custom-form select:focus {
   border-color: var(--primary-color);
 }
 
@@ -194,6 +225,7 @@ body {
   font-size: 16px;
   font-weight: 600;
   margin-top: 10px;
+  cursor: pointer;
 }
 .primary-btn:active { opacity: 0.8; }
 .secondary-btn {
@@ -203,81 +235,61 @@ body {
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
+  width: 100%;
 }
 
-/* Rasm yuklash */
+/* Rasm yuklash va Kamera */
 .photo-upload-container {
-  display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 15px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 10px;
 }
 .photo-upload-container img {
-  width: 100px; height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--border);
+  width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border);
 }
 .photo-upload-container input[type="file"] { display: none; }
 .upload-btn {
-  color: var(--primary-color);
-  font-weight: 500;
-  padding: 5px 15px;
-  background: var(--secondary-bg);
-  border-radius: 20px;
+  color: var(--primary-color); font-weight: 600; padding: 5px 15px; background: var(--secondary-bg); border-radius: 20px; border: 1px solid var(--border);
 }
-
-/* Sertifikatlar dinamik formasi */
-.certificate-group {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 10px;
-  margin-bottom: 10px;
-  align-items: center;
-}
-.certificate-group input {
-  padding: 8px; border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--secondary-bg); color: var(--text-color);
-}
-.remove-cert-btn {
-  background: var(--danger); color: white;
-  border: none; padding: 10px; border-radius: 6px;
-}
-.certificate-group hr { grid-column: span 4; border: 0; height: 1px; background: var(--border); margin: 5px 0;}
 
 /* =========================================================
-   O'QUVCHILAR HISOBOTI VA DAVOMAT EKRANI
+   HISOBOT KARTALARI (O'quvchilar, Sinflar, O'qituvchilar)
    ========================================================= */
+.report-list { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
+
 .student-card {
   display: flex; gap: 15px; align-items: flex-start;
   background: var(--secondary-bg); padding: 15px;
-  border-radius: var(--card-radius); margin-bottom: 15px;
+  border-radius: var(--card-radius); 
   border: 1px solid var(--border);
 }
 .student-card img {
   width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
 }
-.student-card .info p { font-size: 13px; color: var(--hint-color); margin: 3px 0; }
+.student-card .info { flex: 1; }
 .student-card .info h4 { font-size: 16px; margin-bottom: 5px; }
+.student-card .info p { font-size: 13px; color: var(--hint-color); margin: 3px 0; display: flex; align-items: center; gap: 5px; }
 
+/* Kelmagan o'quvchini qizil ramkaga olish */
+.student-card.absent-border {
+  border: 2px solid var(--danger);
+  background: rgba(255, 59, 48, 0.05); /* Yengil qizil fon (ixtiyoriy) */
+}
+
+/* Kichik belgilar (Badges) */
 .badge {
-  display: inline-block; padding: 3px 8px;
+  display: inline-block; padding: 4px 8px;
   background: var(--primary-color); color: white;
-  border-radius: 12px; font-size: 11px; margin-right: 5px; margin-top: 5px;
+  border-radius: 12px; font-size: 11px; margin-right: 5px; margin-top: 5px; font-weight: 500;
 }
-.attendance-stats {
-  margin-top: 10px; display: flex; gap: 10px; font-size: 13px; font-weight: 600;
-}
-.attendance-stats .sababli { color: var(--warning); }
-.attendance-stats .sababsiz { color: var(--danger); }
-.filter-group { margin-bottom: 20px; }
-.filter-group input {
-  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
-  background: var(--secondary-bg); color: var(--text-color);
-}
+.badge.red { background: var(--danger); } 
+.badge.green { background: var(--success); }
+.badge.warning { background: var(--warning); }
 
-/* Davomat radio tugmalari */
+/* =========================================================
+   DAVOMAT EKRANI VA RADIO TUGMALAR
+   ========================================================= */
 .attendance-item {
   background: var(--secondary-bg);
-  border-radius: var(--card-radius); padding: 15px; margin-bottom: 12px;
+  border-radius: var(--card-radius); padding: 15px; margin-bottom: 15px;
 }
 .student-info-row {
   display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-weight: 600;
@@ -286,10 +298,10 @@ body {
 
 .radio-group { display: flex; gap: 5px; }
 .radio-btn {
-  flex: 1; text-align: center; padding: 8px 0;
+  flex: 1; text-align: center; padding: 10px 0;
   border-radius: 8px; border: 1px solid var(--border);
   font-size: 13px; font-weight: 600; transition: 0.2s;
-  opacity: 0.6;
+  opacity: 0.6; cursor: pointer;
 }
 .radio-btn input { display: none; }
 
@@ -297,3 +309,46 @@ body {
 .radio-btn.keldi:has(input:checked) { background-color: var(--success); color: white; border-color: var(--success); opacity: 1; }
 .radio-btn.sababli:has(input:checked) { background-color: var(--warning); color: white; border-color: var(--warning); opacity: 1; }
 .radio-btn.sababsiz:has(input:checked) { background-color: var(--danger); color: white; border-color: var(--danger); opacity: 1; }
+
+/* Izoh yozish maydoni (Faqat 'sababli' tanlanganda chiqadi) */
+.comment-input { margin-top: 10px; display: none; }
+.attendance-item.show-comment .comment-input { display: block; }
+
+/* =========================================================
+   MODAL OYNA (To'liq ma'lumot ko'rsatish)
+   ========================================================= */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.modal-content {
+  background: var(--bg-color);
+  width: 100%;
+  border-radius: 20px 20px 0 0;
+  padding: 25px 20px;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+}
+.close-modal {
+  position: absolute; top: 15px; right: 20px;
+  background: var(--secondary-bg); border: none; border-radius: 50%;
+  width: 32px; height: 32px;
+  font-size: 18px; color: var(--text-color); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-info-img {
+  width: 100px; height: 100px; border-radius: 50%;
+  display: block; margin: 0 auto 15px; object-fit: cover;
+  border: 3px solid var(--secondary-bg);
+}
+
+.modal-data-row {
+  display: flex; justify-content: space-between; padding: 12px 0;
+  border-bottom: 1px solid var(--border); font-size: 14px;
+}
+.modal-data-row:last-child { border-bottom: none; }
+.modal-data-row span:first-child { color: var(--hint-color); font-weight: 500; }
+.modal-data-row strong { text-align: right; max-width: 60%; word-wrap: break-word; }
