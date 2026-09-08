@@ -2,7 +2,7 @@
 
 const CONFIG = {
   // Railway'dagi backend serveringiz domeni (Public URL joylaysiz)
-  BACKEND_URL: 'https://your-backend.up.railway.app',
+  BACKEND_URL: 'https://lecrayon-backend-production.up.railway.app',
 
   // ImgBB rasm yuklash servisi sozlamalari
   IMGBB: {
