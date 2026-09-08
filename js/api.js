@@ -1,7 +1,71 @@
 // Server va API xizmatlariga so'rov yuborish uchun funksiyalar
 
 const API = {
-  // 1. Rasmni ImgBB ga yuklash va URL manzilini olish
+  // ==========================================
+  // AVTORIZATSIYA (YANGI)
+  // ==========================================
+  
+  // Login va parolni tekshirish
+  login: async (username, password) => {
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: "Server bilan bog'lanishda xatolik!" };
+    }
+  },
+
+  // Birinchi marta kirganda Admin profilini saqlash
+  setupAdmin: async (data) => {
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/setup-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: "Saqlashda xatolik yuz berdi" };
+    }
+  },
+
+  // Birinchi marta kirganda O'qituvchi profilini saqlash
+  setupTeacher: async (data) => {
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/setup-teacher`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: "Saqlashda xatolik yuz berdi" };
+    }
+  },
+
+  // Admin uchun barcha o'qituvchilar profilini olish
+  getTeachers: async () => {
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/admin/teachers`);
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: "O'qituvchilarni yuklashda xatolik" };
+    }
+  },
+
+  // ==========================================
+  // RASM VA ASOSIY API LARI
+  // ==========================================
+
+  // Rasmni ImgBB ga yuklash va URL manzilini olish
   uploadImage: async (imageFile) => {
     try {
       const formData = new FormData();
@@ -15,7 +79,7 @@ const API = {
       
       const data = await response.json();
       if (data.success) {
-        return data.data.url; // Tayyor rasm havolasi (URL)
+        return data.data.url;
       } else {
         throw new Error("Rasm yuklashda xatolik yuz berdi");
       }
@@ -25,51 +89,75 @@ const API = {
     }
   },
 
-  // 2. Yangi sinf yaratish
+  // Yangi sinf yaratish
   createClass: async (className, teacherId) => {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/classes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ className, teacherId })
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/classes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ className, teacherId })
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: "Sinf yaratishda xatolik" };
+    }
   },
 
-  // 3. Barcha sinflarni olish
+  // Barcha sinflarni olish
   getClasses: async () => {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/classes`);
-    return response.json();
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/classes`);
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: "Sinflarni yuklashda xatolik" };
+    }
   },
 
-  // 4. Yangi o'quvchi qo'shish (Barcha ma'lumotlari bilan)
+  // Yangi o'quvchi qo'shish (Barcha ma'lumotlari bilan)
   createStudent: async (studentData) => {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/students`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(studentData)
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(studentData)
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: "O'quvchini saqlashda xatolik" };
+    }
   },
 
-  // 5. Admin uchun barcha o'quvchilar hisobotini olish
+  // Admin uchun barcha o'quvchilar hisobotini olish
   getAllStudents: async () => {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/admin/students`);
-    return response.json();
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/admin/students`);
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: "Hisobotni yuklashda xatolik" };
+    }
   },
 
-  // 6. O'qituvchi uchun muayyan sinf o'quvchilarini olish
+  // O'qituvchi uchun muayyan sinf o'quvchilarini olish
   getStudentsByClass: async (classId) => {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
-    return response.json();
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: "Sinf o'quvchilarini yuklashda xatolik" };
+    }
   },
 
-  // 7. Davomatni serverga saqlash
+  // Davomatni serverga saqlash
   saveAttendance: async (attendanceData) => {
-    const response = await fetch(`${CONFIG.BACKEND_URL}/api/attendance`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(attendanceData)
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/attendance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attendanceData)
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: "Davomatni saqlashda xatolik" };
+    }
   }
 };
