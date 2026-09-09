@@ -1,4 +1,7 @@
 const API = {
+  // =====================================
+  // AVTORIZATSIYA VA PROFIL
+  // =====================================
   login: async (username, password) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -34,9 +37,21 @@ const API = {
       return data.success ? data.data.url : null;
     } catch { return null; }
   },
+
+  // =====================================
+  // SINFLAR
+  // =====================================
   createClass: async (className, teacherId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ className, teacherId })
+    });
+    return res.json();
+  },
+  // YANGI: Sinfni tahrirlash
+  editClass: async (classId, className, teacherId) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes/${classId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ className, teacherId })
     });
     return res.json();
@@ -45,9 +60,21 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/classes-stats?date=${date}`);
     return res.json();
   },
+
+  // =====================================
+  // O'QUVCHILAR
+  // =====================================
   createStudent: async (studentData) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(studentData)
+    });
+    return res.json();
+  },
+  // YANGI: O'quvchilarni ommaviy yuklash (Excel)
+  bulkCreateStudents: async (students, classId, className) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/bulk`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students, classId, className })
     });
     return res.json();
   },
@@ -55,6 +82,24 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
     return res.json();
   },
+  // YANGI: O'quvchini tahrirlash
+  updateStudent: async (id, studentData) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(studentData)
+    });
+    return res.json();
+  },
+  // YANGI: O'quvchini o'chirish
+  deleteStudent: async (id) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}`, {
+      method: 'DELETE'
+    });
+    return res.json();
+  },
+
+  // =====================================
+  // DAVOMAT VA O'QITUVCHILAR (ADMIN)
+  // =====================================
   saveAttendance: async (data) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/attendance`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
