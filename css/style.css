@@ -70,7 +70,6 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-/* Ortga tugmasi */
 .back-btn {
   position: absolute;
   left: 20px;
@@ -90,7 +89,6 @@ body {
   font-weight: 700;
 }
 
-/* Log Out (Chiqish) tugmasi - Yuqori o'ng burchak, Qizil rangda */
 .logout-btn {
   position: absolute;
   right: 20px;
@@ -105,7 +103,6 @@ body {
   opacity: 0.5;
 }
 
-/* Loader Overlay */
 .loader-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -178,7 +175,7 @@ body {
 .menu-card h3 { font-size: 14px; font-weight: 600; }
 
 /* =========================================================
-   O'QITUVCHI PROFILI HEADER (TEACHER MENU)
+   O'QITUVCHI PROFILI HEADER
    ========================================================= */
 .teacher-profile-header {
   display: flex;
@@ -236,6 +233,7 @@ body {
   border-radius: 8px;
   font-weight: 600;
   width: 100%;
+  cursor: pointer;
 }
 
 /* Rasm yuklash va Kamera */
@@ -247,7 +245,19 @@ body {
 }
 .photo-upload-container input[type="file"] { display: none; }
 .upload-btn {
-  color: var(--primary-color); font-weight: 600; padding: 5px 15px; background: var(--secondary-bg); border-radius: 20px; border: 1px solid var(--border);
+  color: var(--primary-color); font-weight: 600; padding: 5px 15px; background: var(--secondary-bg); border-radius: 20px; border: 1px solid var(--border); cursor: pointer;
+}
+
+/* =========================================================
+   TABLAR (Qo'lda kiritish vs Excel)
+   ========================================================= */
+.custom-tabs {
+  background: var(--secondary-bg);
+  padding: 5px;
+  border-radius: 12px;
+}
+.custom-tabs button.active {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 /* =========================================================
@@ -256,22 +266,54 @@ body {
 .report-list { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
 
 .student-card {
-  display: flex; gap: 15px; align-items: flex-start;
+  display: flex; gap: 15px; align-items: center; /* Kartochkani o'rtasiga to'g'irlash */
   background: var(--secondary-bg); padding: 15px;
   border-radius: var(--card-radius); 
   border: 1px solid var(--border);
 }
 .student-card img {
-  width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
+  width: 60px; height: 60px; border-radius: 50%; object-fit: cover; align-self: flex-start;
 }
-.student-card .info { flex: 1; }
+.student-card .info { flex: 1; cursor: pointer; }
 .student-card .info h4 { font-size: 16px; margin-bottom: 5px; }
 .student-card .info p { font-size: 13px; color: var(--hint-color); margin: 3px 0; display: flex; align-items: center; gap: 5px; }
 
 /* Kelmagan o'quvchini qizil ramkaga olish */
 .student-card.absent-border {
   border: 2px solid var(--danger);
-  background: rgba(255, 59, 48, 0.05); /* Yengil qizil fon (ixtiyoriy) */
+  background: rgba(255, 59, 48, 0.05);
+}
+
+/* YANGI: Kartochka ichidagi Tahrirlash va O'chirish tugmalari qismi */
+.student-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.icon-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+.icon-action-btn.edit {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+.icon-action-btn.delete {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255, 59, 48, 0.1);
+}
+.icon-action-btn:active {
+  transform: scale(0.9);
 }
 
 /* Kichik belgilar (Badges) */
@@ -290,6 +332,7 @@ body {
 .attendance-item {
   background: var(--secondary-bg);
   border-radius: var(--card-radius); padding: 15px; margin-bottom: 15px;
+  border: 1px solid var(--border);
 }
 .student-info-row {
   display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-weight: 600;
@@ -301,7 +344,7 @@ body {
   flex: 1; text-align: center; padding: 10px 0;
   border-radius: 8px; border: 1px solid var(--border);
   font-size: 13px; font-weight: 600; transition: 0.2s;
-  opacity: 0.6; cursor: pointer;
+  opacity: 0.6; cursor: pointer; background: var(--bg-color);
 }
 .radio-btn input { display: none; }
 
@@ -310,9 +353,21 @@ body {
 .radio-btn.sababli:has(input:checked) { background-color: var(--warning); color: white; border-color: var(--warning); opacity: 1; }
 .radio-btn.sababsiz:has(input:checked) { background-color: var(--danger); color: white; border-color: var(--danger); opacity: 1; }
 
-/* Izoh yozish maydoni (Faqat 'sababli' tanlanganda chiqadi) */
 .comment-input { margin-top: 10px; display: none; }
 .attendance-item.show-comment .comment-input { display: block; }
+
+/* =========================================================
+   YANGI: DIAGRAMMA (CHART) KONTEYNERI
+   ========================================================= */
+.chart-container {
+  background: var(--secondary-bg);
+  border-radius: var(--card-radius);
+  padding: 10px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* =========================================================
    MODAL OYNA (To'liq ma'lumot ko'rsatish)
