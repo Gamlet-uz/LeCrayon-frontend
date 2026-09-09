@@ -2,10 +2,10 @@ const API = {
   // =====================================
   // AVTORIZATSIYA VA PROFIL
   // =====================================
-  login: async (username, password) => {
+  login: async (username, password, telegramId = null) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, telegramId })
     });
     return res.json();
   },
@@ -48,7 +48,6 @@ const API = {
     });
     return res.json();
   },
-  // YANGI: Sinfni tahrirlash
   editClass: async (classId, className, teacherId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes/${classId}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -70,7 +69,6 @@ const API = {
     });
     return res.json();
   },
-  // YANGI: O'quvchilarni ommaviy yuklash (Excel)
   bulkCreateStudents: async (students, classId, className) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/bulk`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -82,14 +80,12 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
     return res.json();
   },
-  // YANGI: O'quvchini tahrirlash
   updateStudent: async (id, studentData) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(studentData)
     });
     return res.json();
   },
-  // YANGI: O'quvchini o'chirish
   deleteStudent: async (id) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}`, {
       method: 'DELETE'
@@ -112,6 +108,28 @@ const API = {
   },
   getTeachers: async () => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/teachers`);
+    return res.json();
+  },
+
+  // =====================================
+  // YANGI: XABARNOMALAR VA SOZLAMALAR
+  // =====================================
+  sendBroadcast: async (message) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/broadcast`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    return res.json();
+  },
+  getSettings: async () => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/settings`);
+    return res.json();
+  },
+  saveSettings: async (time) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/settings`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ time })
+    });
     return res.json();
   }
 };
