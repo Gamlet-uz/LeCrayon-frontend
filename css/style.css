@@ -15,6 +15,7 @@
   --success: #34c759;
   --warning: #ff9500;
   --danger: #ff3b30;
+  --info: #007aff; /* Kech keldi uchun yangi rang (Ko'k) */
   --border: rgba(0, 0, 0, 0.1);
   --card-radius: 12px;
 }
@@ -199,7 +200,7 @@ body {
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 14px; font-weight: 500; color: var(--hint-color); }
 
-.custom-form input, .custom-form select, .form-group input, .form-group select {
+.custom-form input, .custom-form select, .custom-form textarea, .form-group input, .form-group select {
   width: 100%;
   padding: 12px 15px;
   border-radius: 10px;
@@ -209,7 +210,7 @@ body {
   font-size: 15px;
   outline: none;
 }
-.custom-form input:focus, .custom-form select:focus {
+.custom-form input:focus, .custom-form select:focus, .custom-form textarea:focus {
   border-color: var(--primary-color);
 }
 
@@ -223,6 +224,10 @@ body {
   font-weight: 600;
   margin-top: 10px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .primary-btn:active { opacity: 0.8; }
 .secondary-btn {
@@ -266,7 +271,7 @@ body {
 .report-list { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
 
 .student-card {
-  display: flex; gap: 15px; align-items: center; /* Kartochkani o'rtasiga to'g'irlash */
+  display: flex; gap: 15px; align-items: center;
   background: var(--secondary-bg); padding: 15px;
   border-radius: var(--card-radius); 
   border: 1px solid var(--border);
@@ -278,13 +283,16 @@ body {
 .student-card .info h4 { font-size: 16px; margin-bottom: 5px; }
 .student-card .info p { font-size: 13px; color: var(--hint-color); margin: 3px 0; display: flex; align-items: center; gap: 5px; }
 
-/* Kelmagan o'quvchini qizil ramkaga olish */
 .student-card.absent-border {
   border: 2px solid var(--danger);
   background: rgba(255, 59, 48, 0.05);
 }
+.student-card.late-border {
+  border: 2px solid var(--info);
+  background: rgba(0, 122, 255, 0.05);
+}
 
-/* YANGI: Kartochka ichidagi Tahrirlash va O'chirish tugmalari qismi */
+/* Kartochka ichidagi Tahrirlash va O'chirish tugmalari qismi */
 .student-actions {
   display: flex;
   flex-direction: column;
@@ -303,18 +311,9 @@ body {
   font-size: 14px;
   transition: 0.2s;
 }
-.icon-action-btn.edit {
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-.icon-action-btn.delete {
-  color: var(--danger);
-  border-color: var(--danger);
-  background: rgba(255, 59, 48, 0.1);
-}
-.icon-action-btn:active {
-  transform: scale(0.9);
-}
+.icon-action-btn.edit { color: var(--primary-color); border-color: var(--primary-color); }
+.icon-action-btn.delete { color: var(--danger); border-color: var(--danger); background: rgba(255, 59, 48, 0.1); }
+.icon-action-btn:active { transform: scale(0.9); }
 
 /* Kichik belgilar (Badges) */
 .badge {
@@ -325,6 +324,7 @@ body {
 .badge.red { background: var(--danger); } 
 .badge.green { background: var(--success); }
 .badge.warning { background: var(--warning); }
+.badge.blue { background: var(--info); } /* Kech qolganlar uchun yangi */
 
 /* =========================================================
    DAVOMAT EKRANI VA RADIO TUGMALAR
@@ -339,9 +339,14 @@ body {
 }
 .student-info-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover;}
 
-.radio-group { display: flex; gap: 5px; }
+/* 4 ta holat uchun radio guruh */
+.radio-group { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; /* 2 ta qator, 2 ta ustun chiroyliroq turishi uchun */
+  gap: 8px; 
+}
 .radio-btn {
-  flex: 1; text-align: center; padding: 10px 0;
+  text-align: center; padding: 10px 5px;
   border-radius: 8px; border: 1px solid var(--border);
   font-size: 13px; font-weight: 600; transition: 0.2s;
   opacity: 0.6; cursor: pointer; background: var(--bg-color);
@@ -352,12 +357,13 @@ body {
 .radio-btn.keldi:has(input:checked) { background-color: var(--success); color: white; border-color: var(--success); opacity: 1; }
 .radio-btn.sababli:has(input:checked) { background-color: var(--warning); color: white; border-color: var(--warning); opacity: 1; }
 .radio-btn.sababsiz:has(input:checked) { background-color: var(--danger); color: white; border-color: var(--danger); opacity: 1; }
+.radio-btn.kech_keldi:has(input:checked) { background-color: var(--info); color: white; border-color: var(--info); opacity: 1; }
 
 .comment-input { margin-top: 10px; display: none; }
 .attendance-item.show-comment .comment-input { display: block; }
 
 /* =========================================================
-   YANGI: DIAGRAMMA (CHART) KONTEYNERI
+   DIAGRAMMA (CHART) KONTEYNERI
    ========================================================= */
 .chart-container {
   background: var(--secondary-bg);
@@ -370,7 +376,7 @@ body {
 }
 
 /* =========================================================
-   MODAL OYNA (To'liq ma'lumot ko'rsatish)
+   MODALLAR (To'liq ma'lumot va Davomat Daftarchasi)
    ========================================================= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -407,3 +413,30 @@ body {
 .modal-data-row:last-child { border-bottom: none; }
 .modal-data-row span:first-child { color: var(--hint-color); font-weight: 500; }
 .modal-data-row strong { text-align: right; max-width: 60%; word-wrap: break-word; }
+
+/* Davomat Daftarchasidagi qatorlar */
+.diary-item {
+  background: var(--bg-color);
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid var(--border);
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+}
+.diary-item.sababli { border-left-color: var(--warning); }
+.diary-item.sababsiz { border-left-color: var(--danger); }
+.diary-item.kech_keldi { border-left-color: var(--info); }
+
+.diary-date-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.diary-comment {
+  font-size: 13px;
+  color: var(--hint-color);
+}
