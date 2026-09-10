@@ -27,6 +27,13 @@ const API = {
     });
     return res.json();
   },
+  // YANGI: O'qituvchini o'chirish
+  deleteTeacher: async (id) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/users/${id}`, {
+      method: 'DELETE'
+    });
+    return res.json();
+  },
   uploadImage: async (imageFile) => {
     const formData = new FormData();
     formData.append('key', CONFIG.IMGBB.API_KEY);
@@ -55,6 +62,13 @@ const API = {
     });
     return res.json();
   },
+  // YANGI: Sinfni butunlay o'chirish
+  deleteClass: async (classId) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes/${classId}`, {
+      method: 'DELETE'
+    });
+    return res.json();
+  },
   getClassesStats: async (date) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/classes-stats?date=${date}`);
     return res.json();
@@ -78,6 +92,11 @@ const API = {
   },
   getStudentsByClass: async (classId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
+    return res.json();
+  },
+  // YANGI: O'quvchini ismi bo'yicha qidirish
+  searchStudents: async (query) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/search-students?q=${encodeURIComponent(query)}`);
     return res.json();
   },
   updateStudent: async (id, studentData) => {
@@ -106,13 +125,18 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/attendance?date=${date}`);
     return res.json();
   },
+  // YANGI: O'quvchining davomat daftarchasi (tarixi)
+  getStudentAttendance: async (id) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}/attendance`);
+    return res.json();
+  },
   getTeachers: async () => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/teachers`);
     return res.json();
   },
 
   // =====================================
-  // YANGI: XABARNOMALAR VA SOZLAMALAR
+  // XABARNOMALAR VA SOZLAMALAR
   // =====================================
   sendBroadcast: async (message) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/broadcast`, {
