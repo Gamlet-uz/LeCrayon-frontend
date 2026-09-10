@@ -5,7 +5,9 @@ const app = {
   currentAdminClassView: [], 
   teacherStudentsData: [], 
   adminMonitoringData: [], 
+  currentAdminSearchData: [], // Qidiruv natijalarini saqlash uchun
   chartInstance: null, 
+  searchTimeout: null,
   
   // NAVIGATSIYA TARIXI
   historyStack: [],
@@ -27,7 +29,7 @@ const app = {
     app.setupAuthListeners();
     app.setupTeacherListeners();
     app.setupProfileListeners();
-    app.setupAdminListeners(); // Yangi: Admin funksiyalari uchun
+    app.setupAdminListeners();
   },
 
   routeUser: () => {
@@ -97,7 +99,6 @@ const app = {
       const passVal = document.getElementById('login-password').value;
       
       app.toggleLoader(true);
-      // Telegram ID ni ham jo'natamiz
       const res = await API.login(userVal, passVal, telegramId);
       app.toggleLoader(false);
       
@@ -132,11 +133,13 @@ const app = {
     document.getElementById('form-setup-teacher').addEventListener('submit', async (e) => {
       e.preventDefault();
       const file = document.getElementById('teacher-photo').files[0];
-      if (!file) return tg.showAlert("Rasm tanlang!");
       
       app.toggleLoader(true);
-      const photoUrl = await API.uploadImage(file);
-      if(!photoUrl) return app.toggleLoader(false);
+      let photoUrl = '';
+      if (file) {
+        photoUrl = await API.uploadImage(file);
+        if(!photoUrl) return app.toggleLoader(false); // Rasm yuklash xatoligi bo'lsa
+      }
 
       const res = await API.setupTeacher({
         fullName: document.getElementById('teacher-fullname').value, address: document.getElementById('teacher-address').value,
@@ -209,14 +212,16 @@ const app = {
     document.getElementById('form-t-add-student-manual').addEventListener('submit', async (e) => {
       e.preventDefault();
       const file = document.getElementById('t-student-photo').files[0];
-      if (!file) return tg.showAlert("O'quvchi rasmini yuklang!");
       
       app.toggleLoader(true);
-      const url = await API.uploadImage(file);
-      if(!url) return app.toggleLoader(false);
+      let photoUrl = '';
+      if (file) {
+        photoUrl = await API.uploadImage(file);
+        if(!photoUrl) return app.toggleLoader(false);
+      }
 
       const data = {
-        full_name: document.getElementById('t-st-name').value, photo_url: url,
+        full_name: document.getElementById('t-st-name').value, photoUrl: photoUrl,
         class_id: app.currentUser.class_id, class_name: app.currentUser.class_name,
         permanent_address: document.getElementById('t-st-perm').value, dormitory_address: document.getElementById('t-st-dorm').value,
         parent_phone: document.getElementById('t-st-parent').value, dormitory_phone: document.getElementById('t-st-dormphone').value,
@@ -228,7 +233,7 @@ const app = {
       if(res.success) {
         tg.showAlert("O'quvchi qo'shildi!");
         document.getElementById('form-t-add-student-manual').reset();
-        document.getElementById('t-preview-photo').src = 'https://via.placeholder.com/100';
+        document.getElementById('t-preview-photo').src = 'https://via.placeholder.com/100?text=Rasm';
         document.getElementById('t-certs-container').innerHTML = '';
         app.goBack();
       }
@@ -254,8 +259,12 @@ const app = {
             if(r.length === 0 || !r[0]) continue; 
             
             let certs = [];
+            // Excelda 5 tagacha sertifikatni o'qish imkoniyati (Har biri 3 ustundan)
             if(r[5]) certs.push({ name: String(r[5] || ''), level: String(r[6] || ''), percent: String(r[7] || '') });
             if(r[8]) certs.push({ name: String(r[8] || ''), level: String(r[9] || ''), percent: String(r[10] || '') });
+            if(r[11]) certs.push({ name: String(r[11] || ''), level: String(r[12] || ''), percent: String(r[13] || '') });
+            if(r[14]) certs.push({ name: String(r[14] || ''), level: String(r[15] || ''), percent: String(r[16] || '') });
+            if(r[17]) certs.push({ name: String(r[17] || ''), level: String(r[18] || ''), percent: String(r[19] || '') });
 
             studentsList.push({
               full_name: String(r[0] || ''),
@@ -263,7 +272,6 @@ const app = {
               dormitory_address: String(r[2] || ''),
               parent_phone: String(r[3] || ''),
               dormitory_phone: String(r[4] || ''),
-              photo_url: 'https://via.placeholder.com/100?text=Rasm+Yoq',
               certificates: certs
             });
           }
@@ -331,7 +339,7 @@ const app = {
     if(res.success) {
       app.teacherStudentsData = res.data;
       const c = document.getElementById('t-students-list'); c.innerHTML = '';
-      if(res.data.length === 0) return c.innerHTML = "<p>O'quvchilar yo'q.</p>";
+      if(res.data.length === 0) return c.innerHTML = "<p style='text-align:center;'>O'quvchilar yo'q.</p>";
 
       res.data.forEach(st => {
         c.innerHTML += `
@@ -339,7 +347,7 @@ const app = {
             <img src="${st.photo_url}" alt="">
             <div class="info">
               <h4>${st.full_name}</h4>
-              <p><i class="fa-solid fa-phone"></i> Ota-ona: ${st.parent_phone}</p>
+              <p><i class="fa-solid fa-phone"></i> Tel: ${st.parent_phone}</p>
             </div>
             <div class="student-actions">
               <button type="button" class="icon-action-btn edit" onclick="event.stopPropagation(); app.openEditStudent('${st.id}')">
@@ -387,7 +395,7 @@ const app = {
   },
 
   // =====================================
-  // DAVOMAT QILISH
+  // DAVOMAT QILISH (KECH KELDI BILAN)
   // =====================================
   openAttendance: async () => {
     app.toggleLoader(true);
@@ -405,10 +413,11 @@ const app = {
               <div class="student-info-row"><img src="${st.photo_url}" alt=""><span>${st.full_name}</span></div>
               <div class="radio-group">
                 <label class="radio-btn keldi"><input type="radio" name="att_${st.id}" value="keldi" checked onchange="app.toggleComment('${st.id}')"> Keldi</label>
+                <label class="radio-btn kech_keldi"><input type="radio" name="att_${st.id}" value="kech_keldi" onchange="app.toggleComment('${st.id}')"> Kech</label>
                 <label class="radio-btn sababli"><input type="radio" name="att_${st.id}" value="sababli" onchange="app.toggleComment('${st.id}')"> Sababli</label>
                 <label class="radio-btn sababsiz"><input type="radio" name="att_${st.id}" value="sababsiz" onchange="app.toggleComment('${st.id}')"> Sababsiz</label>
               </div>
-              <input type="text" id="comment_${st.id}" class="comment-input custom-form" placeholder="Sababini (izoh) yozing..." style="margin-top:10px; width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+              <input type="text" id="comment_${st.id}" class="comment-input custom-form" placeholder="Izoh yozing (majburiy emas)..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
             </div>
           `;
         });
@@ -421,7 +430,8 @@ const app = {
   toggleComment: (id) => {
     const box = document.getElementById(`att-box-${id}`);
     const r = document.querySelector(`input[name="att_${id}"]:checked`).value;
-    if(r === 'sababli') box.classList.add('show-comment');
+    // Keldi'dan tashqari hamma holatda izoh ochiladi
+    if(r !== 'keldi') box.classList.add('show-comment');
     else box.classList.remove('show-comment');
   },
 
@@ -434,7 +444,7 @@ const app = {
       const id = item.id.replace('att-box-', '');
       const status = document.querySelector(`input[name="att_${id}"]:checked`).value;
       const comment = document.getElementById(`comment_${id}`).value;
-      if (status !== 'keldi') records.push({ studentId: id, status, comment: status === 'sababli' ? comment : '' });
+      if (status !== 'keldi') records.push({ studentId: id, status, comment: comment || '' });
     });
 
     app.toggleLoader(true);
@@ -447,7 +457,7 @@ const app = {
   },
 
   // =====================================
-  // ADMIN BO'LIMI: MONITORING, CLASSES, TEACHERS
+  // ADMIN BO'LIMI VA MONITORING
   // =====================================
   adminLoadClasses: async () => {
     const date = new Date().toISOString().split('T')[0];
@@ -466,7 +476,7 @@ const app = {
               <div style="margin-top:10px;">
                 <span class="badge">Jami: ${cls.total_students}</span>
                 <span class="badge green">Keldi: ${cls.present}</span>
-                <span class="badge red">Kelmagan: ${cls.absent}</span>
+                <span class="badge red">Kelmagan/Kech: ${cls.absent}</span>
               </div>
             </div>
           </div>
@@ -497,7 +507,7 @@ const app = {
             <img src="${st.photo_url}" alt="">
             <div class="info">
               <h4>${st.full_name}</h4>
-              <p><i class="fa-solid fa-phone"></i> Ota-ona: ${st.parent_phone}</p>
+              <p><i class="fa-solid fa-phone"></i> Tel: ${st.parent_phone}</p>
             </div>
           </div>
         `;
@@ -554,10 +564,10 @@ const app = {
     app.chartInstance = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Kelganlar', 'Sababli', 'Sababsiz'],
+        labels: ['Kelganlar', 'Sababli', 'Sababsiz', 'Kech keldi'],
         datasets: [{
-          data: [stats.keldi, stats.sababli, stats.sababsiz],
-          backgroundColor: ['#34c759', '#ff9500', '#ff3b30'],
+          data: [stats.keldi, stats.sababli, stats.sababsiz, stats.kech_keldi || 0],
+          backgroundColor: ['#34c759', '#ff9500', '#ff3b30', '#007aff'],
           borderWidth: 2,
           hoverOffset: 5
         }]
@@ -572,7 +582,7 @@ const app = {
         onClick: (event, elements) => {
           if (elements.length > 0) {
             const index = elements[0].index;
-            let filterStatus = index === 0 ? 'keldi' : (index === 1 ? 'sababli' : 'sababsiz');
+            let filterStatus = ['keldi', 'sababli', 'sababsiz', 'kech_keldi'][index];
             app.filterMonitoringList(filterStatus);
           }
         }
@@ -592,19 +602,20 @@ const app = {
 
     const filtered = app.adminMonitoringData.filter(st => st.status === status);
     if(filtered.length === 0) {
-      title.innerText = `Bu toifada (${status}) o'quvchilar yo'q.`;
+      title.innerText = `Bu toifada (${status.replace('_', ' ')}) o'quvchilar yo'q.`;
       return;
     }
 
-    title.innerText = `${status.toUpperCase()} kelmagan o'quvchilar ro'yxati:`;
+    title.innerText = `${status.replace('_', ' ').toUpperCase()} o'quvchilar ro'yxati:`;
     filtered.forEach(st => {
+      let bClass = status === 'sababli' ? 'warning' : (status === 'kech_keldi' ? 'blue' : 'red');
       c.innerHTML += `
-        <div class="student-card absent-border">
+        <div class="student-card absent-border" style="${status==='kech_keldi'?'border-color:var(--info);background:rgba(0,122,255,0.05);':''}">
           <img src="${st.photo_url || 'https://via.placeholder.com/60'}" alt="">
           <div class="info">
             <h4>${st.full_name} (${st.class_name})</h4>
-            <p><i class="fa-solid fa-phone"></i> Ota-ona: ${st.parent_phone}</p>
-            <p><span class="badge ${st.status === 'sababli' ? 'warning' : 'red'}">${st.status.toUpperCase()}</span> ${st.comment ? '- ' + st.comment : ''}</p>
+            <p><i class="fa-solid fa-phone"></i> Tel: ${st.parent_phone}</p>
+            <p><span class="badge ${bClass}">${st.status.replace('_', ' ').toUpperCase()}</span> ${st.comment ? '- ' + st.comment : ''}</p>
           </div>
         </div>
       `;
@@ -612,16 +623,70 @@ const app = {
   },
 
   // =====================================
-  // ADMIN SOZLAMALARI VA E'LONLAR
+  // QIDIRUV (ADMIN)
+  // =====================================
+  searchStudents: (query) => {
+    if (app.searchTimeout) clearTimeout(app.searchTimeout);
+    
+    app.searchTimeout = setTimeout(async () => {
+      if(!query.trim()) {
+        document.getElementById('admin-search-results').innerHTML = '';
+        return;
+      }
+      
+      app.toggleLoader(true);
+      const res = await API.searchStudents(query);
+      app.toggleLoader(false);
+      
+      if(res.success) {
+        app.currentAdminSearchData = res.data;
+        const c = document.getElementById('admin-search-results');
+        c.innerHTML = '';
+        if(res.data.length === 0) {
+          c.innerHTML = '<p style="text-align:center;">Bunday o\'quvchi topilmadi.</p>';
+        } else {
+          res.data.forEach(st => {
+            c.innerHTML += `
+              <div class="student-card" style="cursor:pointer;" onclick="app.showStudentDetails('${st.id}', 'search')">
+                <img src="${st.photo_url}" alt="">
+                <div class="info">
+                  <h4>${st.full_name}</h4>
+                  <p><i class="fa-solid fa-users"></i> Sinf: ${st.class_name || "Yo'q"}</p>
+                </div>
+              </div>
+            `;
+          });
+        }
+      }
+    }, 500); // 500ms dan keyin so'rov jo'natadi (Qotib qolmasligi uchun)
+  },
+
+  // =====================================
+  // ADMIN SOZLAMALARI VA O'CHIRISHLAR
   // =====================================
   openAdminSettings: async () => {
     app.toggleLoader(true);
-    const res = await API.getSettings();
+    const resSettings = await API.getSettings();
+    const resClasses = await API.getClassesStats(new Date().toISOString().split('T')[0]);
+    const resTeachers = await API.getTeachers();
     app.toggleLoader(false);
     
-    if (res.success && res.time) {
-      document.getElementById('reminder-time').value = res.time;
+    if (resSettings.success && resSettings.time) {
+      document.getElementById('reminder-time').value = resSettings.time;
     }
+    
+    // Selectlarga ma'lumot to'ldirish
+    if (resClasses.success) {
+      const s1 = document.getElementById('delete-class-select');
+      s1.innerHTML = '<option value="">Sinfni tanlang...</option>';
+      resClasses.data.forEach(c => s1.innerHTML += `<option value="${c.id}">${c.class_name}</option>`);
+    }
+    if (resTeachers.success) {
+      const s2 = document.getElementById('delete-teacher-select');
+      s2.innerHTML = '<option value="">O\'qituvchini tanlang...</option>';
+      resTeachers.data.forEach(t => s2.innerHTML += `<option value="${t.id}">${t.full_name} (${t.username})</option>`);
+    }
+
     app.showScreen('screen-admin-settings');
   },
 
@@ -634,11 +699,9 @@ const app = {
       app.toggleLoader(false);
       
       if (res.success) {
-        tg.showAlert(`${res.count} nafar o'qituvchiga e'lon yuborildi!`);
+        tg.showAlert(`${res.count} nafar foydalanuvchiga e'lon yuborildi!`);
         document.getElementById('form-broadcast').reset();
-      } else {
-        tg.showAlert("Xatolik: " + res.error);
-      }
+      } else tg.showAlert("Xatolik yuz berdi");
     });
 
     document.getElementById('form-settings').addEventListener('submit', async (e) => {
@@ -647,12 +710,35 @@ const app = {
       app.toggleLoader(true);
       const res = await API.saveSettings(time);
       app.toggleLoader(false);
-      
-      if (res.success) {
-        tg.showAlert(`Eslatma vaqti ${time} ga o'zgartirildi!`);
-      } else {
-        tg.showAlert("Xatolik: " + res.error);
-      }
+      if (res.success) tg.showAlert(`Eslatma vaqti ${time} ga o'zgartirildi!`);
+    });
+
+    document.getElementById('form-delete-class').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cId = document.getElementById('delete-class-select').value;
+      if(!cId) return tg.showAlert("Sinfni tanlang!");
+      tg.showConfirm("Ushbu sinfni butunlay o'chirib tashlaysizmi? O'quvchilar sinfsiz qoladi.", async (conf) => {
+        if(conf) {
+          app.toggleLoader(true);
+          const res = await API.deleteClass(cId);
+          app.toggleLoader(false);
+          if(res.success) { tg.showAlert("Sinf o'chirildi."); app.openAdminSettings(); }
+        }
+      });
+    });
+
+    document.getElementById('form-delete-teacher').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const tId = document.getElementById('delete-teacher-select').value;
+      if(!tId) return tg.showAlert("O'qituvchini tanlang!");
+      tg.showConfirm("O'qituvchini tizimdan o'chirasizmi? U boshqa tizimga kira olmaydi.", async (conf) => {
+        if(conf) {
+          app.toggleLoader(true);
+          const res = await API.deleteTeacher(tId);
+          app.toggleLoader(false);
+          if(res.success) { tg.showAlert("O'qituvchi o'chirildi."); app.openAdminSettings(); }
+        }
+      });
     });
   },
 
@@ -726,10 +812,14 @@ const app = {
 
   addCertificateField: (containerId, name = '', level = '', percent = '') => {
     const c = document.getElementById(containerId);
+    if (c.querySelectorAll('.certificate-group').length >= 5) {
+      return tg.showAlert("Maksimal 5 ta sertifikat qo'shish mumkin!");
+    }
+
     const div = document.createElement('div'); div.className = 'certificate-group custom-form';
     div.innerHTML = `
-      <input type="text" class="cert-name" placeholder="Sertifikat (IELTS)" value="${name}">
-      <input type="text" class="cert-level" placeholder="Daraja (B2)" value="${level}">
+      <input type="text" class="cert-name" placeholder="Sertifikat (masalan: IELTS)" value="${name}">
+      <input type="text" class="cert-level" placeholder="Daraja (masalan: B2)" value="${level}">
       <input type="number" class="cert-percent" placeholder="Foiz" value="${percent}">
       <button type="button" style="padding:10px; background:var(--danger); color:white; border:none; border-radius:8px;" onclick="this.parentElement.remove()">O'chirish</button>
       <hr style="margin: 10px 0; border:0; height:1px; background:var(--border);">
@@ -749,25 +839,71 @@ const app = {
     return certs;
   },
 
+  // =====================================
+  // DAVOMAT DAFTARCHASI (Tarix)
+  // =====================================
+  openDiaryModal: async (stId, stName) => {
+    app.toggleLoader(true);
+    const res = await API.getStudentAttendance(stId);
+    app.toggleLoader(false);
+    
+    if(res.success) {
+      document.getElementById('diary-student-name').innerText = `${stName} - Daftarcha`;
+      const c = document.getElementById('diary-records-list');
+      c.innerHTML = '';
+      
+      if(res.data.length === 0) {
+        c.innerHTML = '<p style="text-align:center;">Bu o\'quvchida dars qoldirish yoki kechikishlar yo\'q.</p>';
+      } else {
+        res.data.forEach(rec => {
+          c.innerHTML += `
+            <div class="diary-item ${rec.status}">
+              <div class="diary-date-status">
+                <span><i class="fa-regular fa-calendar"></i> ${rec.date}</span>
+                <span style="text-transform:uppercase;">${rec.status.replace('_', ' ')}</span>
+              </div>
+              <div class="diary-comment">Izoh: ${rec.comment}</div>
+            </div>
+          `;
+        });
+      }
+      document.getElementById('diary-modal').classList.remove('hidden');
+    }
+  },
+
+  closeDiaryModal: () => {
+    document.getElementById('diary-modal').classList.add('hidden');
+  },
+
+  // O'quvchi to'liq ma'lumoti
   showStudentDetails: (id, context) => {
     let st;
     if(context === 'admin') st = app.currentAdminClassView.find(s => s.id === id);
-    else st = app.teacherStudentsData.find(s => s.id === id);
+    else if(context === 'teacher') st = app.teacherStudentsData.find(s => s.id === id);
+    else if(context === 'search') st = app.currentAdminSearchData.find(s => s.id === id);
     
     if(!st) return;
-    let certs = st.certificates.map(c => `<span class="badge">${c.name} ${c.level} (${c.percent}%)</span>`).join(' ');
+    let certs = st.certificates && st.certificates.length > 0 
+      ? st.certificates.map(c => `<span class="badge">${c.name} ${c.level} (${c.percent}%)</span>`).join(' ')
+      : 'Yo\'q';
     
     document.getElementById('modal-body').innerHTML = `
       <img src="${st.photo_url}" class="modal-info-img" alt="">
       <h3 style="text-align:center; margin-bottom:20px;">${st.full_name}</h3>
-      <div class="modal-data-row"><span>Sinf</span> <strong>${st.class_name}</strong></div>
+      <div class="modal-data-row"><span>Sinf</span> <strong>${st.class_name || 'Sinfsiz'}</strong></div>
       <div class="modal-data-row"><span>Doimiy manzil</span> <strong>${st.permanent_address}</strong></div>
       <div class="modal-data-row"><span>Yotoqxona</span> <strong>${st.dormitory_address || '-'}</strong></div>
       <div class="modal-data-row"><span>Ota-ona telfoni</span> <strong>${st.parent_phone}</strong></div>
       <div class="modal-data-row"><span>Yotoqxona telfoni</span> <strong>${st.dormitory_phone || '-'}</strong></div>
-      <div class="modal-data-row" style="flex-direction:column; gap:5px;"><span>Sertifikatlar</span> <div>${certs || 'Yo\'q'}</div></div>
+      <div class="modal-data-row" style="flex-direction:column; gap:5px;"><span>Sertifikatlar</span> <div>${certs}</div></div>
       <div class="modal-data-row"><span>Qoldirgan (Sababli)</span> <strong style="color:var(--warning);">${st.total_absences?.sababli || 0} marta</strong></div>
       <div class="modal-data-row"><span>Qoldirgan (Sababsiz)</span> <strong style="color:var(--danger);">${st.total_absences?.sababsiz || 0} marta</strong></div>
+      <div class="modal-data-row"><span>Kech qolgan</span> <strong style="color:var(--info);">${st.total_absences?.kech_keldi || 0} marta</strong></div>
+      
+      <!-- YANGI: Davomat Daftarchasi Tugmasi -->
+      <button class="secondary-btn" style="margin-top:20px; width:100%; border:1px solid var(--primary-color);" onclick="app.openDiaryModal('${st.id}', '${st.full_name}')">
+        <i class="fa-solid fa-book"></i> Davomat Daftarchasini Ko'rish
+      </button>
     `;
     document.getElementById('details-modal').classList.remove('hidden');
   },
@@ -785,7 +921,9 @@ const app = {
     document.getElementById('details-modal').classList.remove('hidden');
   },
 
-  closeModal: () => document.getElementById('details-modal').classList.add('hidden')
+  closeModal: () => {
+    document.getElementById('details-modal').classList.add('hidden');
+  }
 };
 
 document.addEventListener('DOMContentLoaded', app.init);
