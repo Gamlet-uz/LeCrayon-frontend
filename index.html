@@ -96,7 +96,6 @@
     <section id="screen-admin-search" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Qidirish</h2>
       <div class="form-group" style="margin-bottom: 20px;">
-        <!-- Kiritilgan matn JS orqali avtomatik lotinchaga o'tkaziladi -->
         <input type="text" id="admin-search-input" placeholder="Ism yoki familiya yozing..." oninput="app.searchStudents(this.value)">
       </div>
       <div id="admin-search-results" class="report-list"></div>
@@ -112,16 +111,8 @@
         <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Xabarni Yuborish</button>
       </form>
 
-      <!-- O'QUVCHILARNI OMMAVIY YUKLASH (YANGI QO'SHILDI) -->
+      <!-- O'QUVCHILARNI OMMAVIY YUKLASH -->
       <div class="divider" style="margin-top: 30px;">Umumiy O'quvchilar Bazasini Yuklash</div>
-      <div style="margin-bottom: 15px; text-align: center;">
-        <a href="/templates/shablon.xlsx" download class="secondary-btn" style="display:inline-block; text-decoration:none; width: auto; padding: 8px 15px; font-size: 14px;">
-          <i class="fa-solid fa-download"></i> Namuna (Shablon) Excel faylini yuklab olish
-        </a>
-        <p style="font-size: 12px; color: var(--hint-color); margin-top: 8px;">
-          Faylda tug'ilgan sana va "Sinf" ustuni bo'lishi shart. O'qituvchilar ushbu sinflarni avvaldan yaratgan bo'lishlari kerak.
-        </p>
-      </div>
       <form id="form-admin-bulk-students" class="custom-form">
         <input type="file" id="admin-excel-file" accept=".xlsx, .xls" required style="padding: 10px; background: white;">
         <button type="submit" class="primary-btn"><i class="fa-solid fa-file-excel"></i> Excel orqali Barcha O'quvchilarni Yuklash</button>
@@ -240,16 +231,12 @@
           <label for="t-student-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish (Ixtiyoriy)</label>
         </div>
         <input type="text" id="t-st-name" required placeholder="To'liq ism (F.I.SH)">
-        
-        <!-- YUKLASH TUG'ILGAN SANA -->
         <input type="text" id="t-st-birth" placeholder="Tug'ilgan sana (masalan: 12.05.2010)">
-        
         <input type="text" id="t-st-perm" required placeholder="Doimiy yashash manzili">
         <input type="text" id="t-st-dorm" placeholder="Yotoqxona manzili (agar bo'lsa)">
         <input type="text" inputmode="tel" id="t-st-parent" required placeholder="Ota-ona telefon raqamlari (vergul bilan)">
         <input type="text" inputmode="tel" id="t-st-dormphone" placeholder="Yotoqxona telefon raqamlari (vergul bilan)">
         <div class="certificates-section">
-          <!-- SERTIFIKATLAR SONI 10 Taga o'zgartirildi -->
           <h3>Sertifikatlar (Maksimal 10 ta)</h3>
           <div id="t-certs-container"></div>
           <button type="button" class="secondary-btn" onclick="app.addCertificateField('t-certs-container')"><i class="fa-solid fa-plus"></i> Sertifikat Qo'shish</button>
@@ -288,7 +275,6 @@
     </section>
 
     <section id="screen-attendance" class="screen hidden slide-up">
-      <!-- DAVOMAT TAHRIRLASH REJIMI UCHUN SARLAVHA YANILANDI -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h2 class="section-title" id="att-class-title" style="margin:0;">Davomat</h2>
         <span id="attendance-status-badge" class="badge" style="display: none; background-color: var(--warning); margin:0;">
@@ -314,13 +300,24 @@
         <input type="text" id="edit-fullname" required placeholder="F.I.SH">
         <div class="form-group hidden"><input type="text" id="edit-address" placeholder="Manzil"></div>
         <div class="form-group hidden"><input type="text" inputmode="tel" id="edit-phone" placeholder="Telefon"></div>
+        
         <div class="divider">Akkauntni o'zgartirish</div>
         <input type="text" id="edit-username" required minlength="8" placeholder="Login (min 8)">
         <input type="password" id="edit-password" required minlength="8" placeholder="Parol (min 8)">
-        <button type="submit" class="primary-btn">Ma'lumotlarni Yangilash</button>
 
-        <div class="divider" style="margin-top:20px;">Xavfsizlik</div>
-        <!-- FACE ID DAN BARMOQ IZIGA O'ZGARDI -->
+        <!-- XAVFSIZLIK VA TELEGRAM ID -->
+        <div class="divider" style="margin-top:20px;">Xavfsizlik va Qulflash</div>
+        <div class="form-group">
+          <label for="edit-telegram-id" style="font-size:13px; font-weight: 600; color:var(--danger);">Telegram ID raqamingiz (Majburiy emas):</label>
+          <input type="text" id="edit-telegram-id" placeholder="Masalan: 123456789">
+          <p style="font-size: 11px; color: var(--hint-color); line-height: 1.4; margin-top:5px;">
+            Agar bu yerga ID kiritsangiz, tizimga boshqa Telegram akkauntdan umuman kirib bo'lmaydi. O'z ID raqamingizni <b>@userinfobot</b> dan olishingiz mumkin.
+          </p>
+        </div>
+
+        <button type="submit" class="primary-btn" style="margin-top:20px;">Ma'lumotlarni Yangilash</button>
+
+        <div class="divider" style="margin-top:20px;">Tezkor Kirish</div>
         <button type="button" id="btn-register-faceid" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center;">
           <i class="fa-solid fa-fingerprint"></i> Barmoq izi ulash / Yangilash
         </button>
