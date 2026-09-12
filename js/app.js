@@ -2,21 +2,34 @@ const tg = window.Telegram.WebApp;
 
 const app = {
   currentUser: null,
+  activeClassId: null,       
+  activeClassName: null,     
+  teacherClasses: [],        
   currentAdminClassView: [], 
   teacherStudentsData: [], 
   adminMonitoringData: [], 
-  currentAdminSearchData: [], // Qidiruv natijalarini saqlash uchun
+  currentAdminSearchData: [], 
   chartInstance: null, 
   searchTimeout: null,
   
-  // NAVIGATSIYA TARIXI
+  // Cropper.js 
+  cropper: null,
+  cropTargetPreviewId: null,
+  
+  // NAVIGATSIYA
   historyStack: [],
   currentScreen: '',
 
   init: () => {
-    tg.ready(); tg.expand();
+    tg.ready(); 
+    tg.expand();
     document.documentElement.style.setProperty('--bg-color', tg.themeParams.bg_color || '#ffffff');
     document.documentElement.style.setProperty('--text-color', tg.themeParams.text_color || '#000000');
+
+    // Face ID (SimpleWebAuthn) kutubxonasini avtomatik yuklash
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js';
+    document.head.appendChild(script);
 
     const savedUser = localStorage.getItem('leCrayonUser');
     if (savedUser) {
@@ -30,12 +43,17 @@ const app = {
     app.setupTeacherListeners();
     app.setupProfileListeners();
     app.setupAdminListeners();
+    app.setupCropperListeners();
   },
 
   routeUser: () => {
     app.historyStack = []; 
-    if (app.currentUser.role === 'admin') app.showScreen('screen-admin-menu', false);
-    else app.setupTeacherDashboard();
+    if (app.currentUser.role === 'admin') {
+      app.showScreen('screen-admin-menu', false);
+    } else {
+      // O'qituvchi bo'lsa, sinflarini tanlash menyusiga yuboramiz
+      app.loadTeacherClasses(); 
+    }
   },
 
   showScreen: (screenId, pushToHistory = true) => {
@@ -44,7 +62,8 @@ const app = {
     }
     
     document.querySelectorAll('.screen').forEach(s => { 
-      s.classList.add('hidden'); s.classList.remove('active'); 
+      s.classList.add('hidden'); 
+      s.classList.remove('active'); 
     });
     
     const target = document.getElementById(screenId);
@@ -56,11 +75,14 @@ const app = {
     const logoutBtn = document.getElementById('logout-btn');
 
     if (screenId === 'screen-login' || screenId.includes('setup')) {
-      backBtn.classList.add('hidden'); logoutBtn.classList.add('hidden');
-    } else if (screenId === 'screen-admin-menu' || screenId === 'screen-teacher-menu') {
-      backBtn.classList.add('hidden'); logoutBtn.classList.remove('hidden');
+      backBtn.classList.add('hidden'); 
+      logoutBtn.classList.add('hidden');
+    } else if (screenId === 'screen-admin-menu' || screenId === 'screen-t-select-class') {
+      backBtn.classList.add('hidden'); 
+      logoutBtn.classList.remove('hidden');
     } else {
-      backBtn.classList.remove('hidden'); logoutBtn.classList.add('hidden');
+      backBtn.classList.remove('hidden'); 
+      logoutBtn.classList.add('hidden');
     }
   },
 
@@ -85,14 +107,17 @@ const app = {
     });
   },
 
-  toggleLoader: (show) => { document.getElementById('loader').classList[show ? 'remove' : 'add']('hidden'); },
+  toggleLoader: (show) => { 
+    document.getElementById('loader').classList[show ? 'remove' : 'add']('hidden'); 
+  },
 
   // =====================================
-  // AVTORIZATSIYA VA SETUP
+  // AVTORIZATSIYA VA FACE ID (BIOMETRIKA)
   // =====================================
   setupAuthListeners: () => {
     const telegramId = tg.initDataUnsafe?.user?.id || null;
 
+    // ODDIY LOGIN
     document.getElementById('form-login').addEventListener('submit', async (e) => {
       e.preventDefault();
       const userVal = document.getElementById('login-username').value;
@@ -111,9 +136,73 @@ const app = {
           localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
           app.routeUser();
         }
-      } else tg.showAlert(res.error);
+      } else {
+        tg.showAlert(res.error);
+      }
     });
 
+    // FACE ID ORQALI LOGIN QILISH
+    document.getElementById('btn-faceid-login').addEventListener('click', async () => {
+      if (!window.SimpleWebAuthnBrowser) {
+        return tg.showAlert("Xavfsizlik tizimi yuklanmoqda, iltimos ozgina kuting...");
+      }
+      try {
+        app.toggleLoader(true);
+        const genRes = await API.loginFaceIdGenerate();
+        app.toggleLoader(false);
+        
+        if(!genRes.success) throw new Error(genRes.error || "Server xatosi");
+
+        // Telefonning Face ID yoki barmoq izi darchasini ochish
+        const authResp = await window.SimpleWebAuthnBrowser.startAuthentication(genRes.options);
+        
+        app.toggleLoader(true);
+        const verRes = await API.loginFaceIdVerify(authResp, genRes.sessionId, telegramId);
+        app.toggleLoader(false);
+
+        if(verRes.success) {
+          app.currentUser = verRes.user; 
+          localStorage.setItem('leCrayonUser', JSON.stringify(verRes.user)); 
+          app.routeUser();
+        } else { 
+          tg.showAlert(verRes.error); 
+        }
+      } catch (err) {
+        app.toggleLoader(false); 
+        tg.showAlert("Biometrik kirish bekor qilindi yoki xato yuz berdi.");
+      }
+    });
+
+    // FACE ID ULASH / RO'YXATDAN O'TKAZISH
+    const registerFaceIdBtn = document.getElementById('btn-register-faceid');
+    if(registerFaceIdBtn) {
+      registerFaceIdBtn.addEventListener('click', async () => {
+        if (!window.SimpleWebAuthnBrowser) return tg.showAlert("Kutubxona yuklanmoqda...");
+        try {
+          app.toggleLoader(true);
+          const genRes = await API.registerFaceIdGenerate(app.currentUser.username);
+          app.toggleLoader(false);
+          if(!genRes.success) throw new Error(genRes.error);
+
+          const attResp = await window.SimpleWebAuthnBrowser.startRegistration(genRes.options);
+          
+          app.toggleLoader(true);
+          const verRes = await API.registerFaceIdVerify(app.currentUser.username, attResp);
+          app.toggleLoader(false);
+
+          if(verRes.success) { 
+            tg.showAlert("Face ID muvaffaqiyatli ulandi! Endi tizimga parolsiz kirishingiz mumkin."); 
+          } else { 
+            tg.showAlert(verRes.error); 
+          }
+        } catch (err) {
+          app.toggleLoader(false); 
+          tg.showAlert("Biometrika ulashda xatolik: " + err.message);
+        }
+      });
+    }
+
+    // ADMIN SETUP
     document.getElementById('form-setup-admin').addEventListener('submit', async (e) => {
       e.preventDefault();
       app.toggleLoader(true);
@@ -124,57 +213,153 @@ const app = {
         telegramId: telegramId
       });
       app.toggleLoader(false);
-      if(res.success) { app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); app.routeUser(); } 
-      else tg.showAlert(res.error);
+      
+      if(res.success) { 
+        app.currentUser = res.user; 
+        localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); 
+        app.routeUser(); 
+      } else {
+        tg.showAlert(res.error);
+      }
     });
 
-    document.getElementById('teacher-photo').addEventListener('change', (e) => app.previewImage(e, 'teacher-preview-photo'));
-
+    // O'QITUVCHI SETUP
     document.getElementById('form-setup-teacher').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = document.getElementById('teacher-photo').files[0];
-      
       app.toggleLoader(true);
-      let photoUrl = '';
-      if (file) {
-        photoUrl = await API.uploadImage(file);
-        if(!photoUrl) return app.toggleLoader(false); // Rasm yuklash xatoligi bo'lsa
-      }
-
+      
+      const photoBlob = await app.getBlobFromPreview('teacher-preview-photo');
+      const photoUrl = photoBlob ? await API.uploadImage(photoBlob) : '';
+      
       const res = await API.setupTeacher({
-        fullName: document.getElementById('teacher-fullname').value, address: document.getElementById('teacher-address').value,
-        phone: document.getElementById('teacher-phone').value, username: document.getElementById('teacher-new-login').value,
-        password: document.getElementById('teacher-new-password').value, photoUrl: photoUrl, telegramId: telegramId
+        fullName: document.getElementById('teacher-fullname').value, 
+        address: document.getElementById('teacher-address').value,
+        phone: document.getElementById('teacher-phone').value, 
+        username: document.getElementById('teacher-new-login').value,
+        password: document.getElementById('teacher-new-password').value, 
+        photoUrl: photoUrl, 
+        telegramId: telegramId
       });
       app.toggleLoader(false);
-      if(res.success) { app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); app.routeUser(); } 
-      else tg.showAlert(res.error);
+      
+      if(res.success) { 
+        app.currentUser = res.user; 
+        localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); 
+        app.routeUser(); 
+      } else {
+        tg.showAlert(res.error);
+      }
     });
   },
 
   // =====================================
-  // O'QITUVCHI - ASOSIY PANEL VA SINFLAR
+  // CROPPER (RASMNI QIRQISH) MANTIQI
   // =====================================
-  setupTeacherDashboard: () => {
-    document.getElementById('menu-teacher-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100';
-    document.getElementById('menu-teacher-name').innerText = app.currentUser.full_name;
-    
-    const hasClass = !!app.currentUser.class_id;
-    document.getElementById('menu-teacher-class').innerText = hasClass ? `Sinf: ${app.currentUser.class_name}` : "Sinf yaratilmagan";
-    
-    document.getElementById('btn-t-add-class').style.display = hasClass ? 'none' : 'block';
-    document.getElementById('btn-t-my-class').style.display = hasClass ? 'block' : 'none';
+  setupCropperListeners: () => {
+    const bindCrop = (inputId, previewId) => {
+      const el = document.getElementById(inputId);
+      if(!el) return;
+      
+      el.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            document.getElementById('image-to-crop').src = ev.target.result;
+            document.getElementById('crop-modal').classList.remove('hidden');
+            
+            if (app.cropper) {
+              app.cropper.destroy();
+            }
+            
+            // Rasmni kvadrat qilib kesish uchun sozlamalar
+            app.cropper = new Cropper(document.getElementById('image-to-crop'), {
+              aspectRatio: 1, 
+              viewMode: 1, 
+              dragMode: 'move',
+            });
+            app.cropTargetPreviewId = previewId;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    };
 
-    app.showScreen('screen-teacher-menu', false);
+    // Barcha rasm yuklanadigan inputlarni Cropper bilan bog'lash
+    bindCrop('teacher-photo', 'teacher-preview-photo');
+    bindCrop('t-student-photo-input', 't-preview-photo');
+    bindCrop('edit-st-photo-input', 'edit-st-preview-photo');
+    bindCrop('edit-photo-input', 'edit-preview-photo');
   },
 
-  openMyClassMenu: () => {
-    document.getElementById('my-class-title-text').innerText = `Sinf: ${app.currentUser.class_name}`;
+  closeCropModal: () => {
+    document.getElementById('crop-modal').classList.add('hidden');
+    if(app.cropper) { 
+      app.cropper.destroy(); 
+      app.cropper = null; 
+    }
+  },
+
+  applyCrop: () => {
+    if (!app.cropper) return;
+    // Rasmni 400x400 sifatda qirqib olamiz
+    const canvas = app.cropper.getCroppedCanvas({ width: 400, height: 400 });
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
+    
+    document.getElementById(app.cropTargetPreviewId).src = dataUrl;
+    app.closeCropModal();
+  },
+
+  getBlobFromPreview: async (imgId) => {
+    const src = document.getElementById(imgId).src;
+    if (src && src.startsWith('data:image')) {
+      const res = await fetch(src);
+      return await res.blob();
+    }
+    return null; 
+  },
+
+  // =====================================
+  // O'QITUVCHI - SINFLAR VA BOSHQARUV
+  // =====================================
+  loadTeacherClasses: async () => {
+    document.getElementById('select-teacher-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100';
+    document.getElementById('select-teacher-name').innerText = app.currentUser.full_name;
+
+    app.toggleLoader(true);
+    const res = await API.getTeacherClasses(app.currentUser.id);
+    app.toggleLoader(false);
+    
+    if (res.success) {
+      app.teacherClasses = res.data;
+      const c = document.getElementById('t-class-selection-list');
+      c.innerHTML = '';
+      
+      if (res.data.length === 0) {
+        c.innerHTML = "<p style='text-align:center; color:var(--hint-color); font-size:14px;'>Sizda hozircha sinf yo'q.</p>";
+      } else {
+        res.data.forEach(cls => {
+          c.innerHTML += `
+            <div class="menu-card" onclick="app.selectClass('${cls.id}', '${cls.class_name}')" style="border: 2px solid var(--primary-color);">
+              <i class="fa-solid fa-users-rectangle"></i>
+              <h3>${cls.class_name}</h3>
+            </div>
+          `;
+        });
+      }
+      app.showScreen('screen-t-select-class', false);
+    }
+  },
+
+  selectClass: (classId, className) => {
+    app.activeClassId = classId;
+    app.activeClassName = className;
+    document.getElementById('my-class-title-text').innerText = `Sinf: ${className}`;
     app.showScreen('screen-teacher-my-class');
   },
 
   openEditClass: () => {
-    document.getElementById('t-edit-class-name').value = app.currentUser.class_name;
+    document.getElementById('t-edit-class-name').value = app.activeClassName;
     app.showScreen('screen-t-edit-class');
   },
 
@@ -184,11 +369,11 @@ const app = {
       app.toggleLoader(true);
       const res = await API.createClass(document.getElementById('t-class-name').value, app.currentUser.id);
       app.toggleLoader(false);
-      if(res.success) {
-        app.currentUser.class_id = res.classId; app.currentUser.class_name = res.className;
-        localStorage.setItem('leCrayonUser', JSON.stringify(app.currentUser));
-        tg.showAlert("Sinf muvaffaqiyatli yaratildi!");
-        app.setupTeacherDashboard();
+      
+      if(res.success) { 
+        tg.showAlert("Sinf yaratildi!"); 
+        app.goBack(); 
+        app.loadTeacherClasses(); 
       }
     });
 
@@ -196,42 +381,41 @@ const app = {
       e.preventDefault();
       const name = document.getElementById('t-edit-class-name').value;
       app.toggleLoader(true);
-      const res = await API.editClass(app.currentUser.class_id, name, app.currentUser.id);
+      const res = await API.editClass(app.activeClassId, name);
       app.toggleLoader(false);
-      if(res.success) {
-        app.currentUser.class_name = name;
-        localStorage.setItem('leCrayonUser', JSON.stringify(app.currentUser));
-        tg.showAlert("Sinf nomi yangilandi!");
-        app.goBack();
+      
+      if(res.success) { 
+        app.activeClassName = name; 
+        tg.showAlert("Sinf nomi yangilandi!"); 
+        app.goBack(); 
+        document.getElementById('my-class-title-text').innerText = `Sinf: ${name}`; 
       }
     });
 
-    document.getElementById('t-student-photo').addEventListener('change', (e) => app.previewImage(e, 't-preview-photo'));
-    document.getElementById('edit-st-photo').addEventListener('change', (e) => app.previewImage(e, 'edit-st-preview-photo'));
-
     document.getElementById('form-t-add-student-manual').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = document.getElementById('t-student-photo').files[0];
-      
       app.toggleLoader(true);
-      let photoUrl = '';
-      if (file) {
-        photoUrl = await API.uploadImage(file);
-        if(!photoUrl) return app.toggleLoader(false);
-      }
+      
+      const photoBlob = await app.getBlobFromPreview('t-preview-photo');
+      const photoUrl = photoBlob ? await API.uploadImage(photoBlob) : '';
 
       const data = {
-        full_name: document.getElementById('t-st-name').value, photoUrl: photoUrl,
-        class_id: app.currentUser.class_id, class_name: app.currentUser.class_name,
-        permanent_address: document.getElementById('t-st-perm').value, dormitory_address: document.getElementById('t-st-dorm').value,
-        parent_phone: document.getElementById('t-st-parent').value, dormitory_phone: document.getElementById('t-st-dormphone').value,
+        full_name: document.getElementById('t-st-name').value, 
+        photoUrl: photoUrl,
+        class_id: app.activeClassId, 
+        class_name: app.activeClassName,
+        permanent_address: document.getElementById('t-st-perm').value, 
+        dormitory_address: document.getElementById('t-st-dorm').value,
+        parent_phone: document.getElementById('t-st-parent').value, 
+        dormitory_phone: document.getElementById('t-st-dormphone').value,
         certificates: app.gatherCertificates('t-certs-container')
       };
 
       const res = await API.createStudent(data);
       app.toggleLoader(false);
+      
       if(res.success) {
-        tg.showAlert("O'quvchi qo'shildi!");
+        tg.showAlert("O'quvchi muvaffaqiyatli qo'shildi!");
         document.getElementById('form-t-add-student-manual').reset();
         document.getElementById('t-preview-photo').src = 'https://via.placeholder.com/100?text=Rasm';
         document.getElementById('t-certs-container').innerHTML = '';
@@ -242,13 +426,14 @@ const app = {
     document.getElementById('form-t-add-student-excel').addEventListener('submit', async (e) => {
       e.preventDefault();
       const file = document.getElementById('excel-file').files[0];
-      if (!file) return tg.showAlert("Excel faylini tanlang!");
+      if (!file) return tg.showAlert("Iltimos, Excel faylini tanlang!");
       
       app.toggleLoader(true);
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      
+      reader.onload = async (ev) => {
         try {
-          const data = new Uint8Array(e.target.result);
+          const data = new Uint8Array(ev.target.result);
           const workbook = XLSX.read(data, {type: 'array'});
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1}); 
@@ -259,7 +444,6 @@ const app = {
             if(r.length === 0 || !r[0]) continue; 
             
             let certs = [];
-            // Excelda 5 tagacha sertifikatni o'qish imkoniyati (Har biri 3 ustundan)
             if(r[5]) certs.push({ name: String(r[5] || ''), level: String(r[6] || ''), percent: String(r[7] || '') });
             if(r[8]) certs.push({ name: String(r[8] || ''), level: String(r[9] || ''), percent: String(r[10] || '') });
             if(r[11]) certs.push({ name: String(r[11] || ''), level: String(r[12] || ''), percent: String(r[13] || '') });
@@ -276,17 +460,24 @@ const app = {
             });
           }
 
-          if(studentsList.length === 0) { app.toggleLoader(false); return tg.showAlert("Excel faylda ma'lumot topilmadi!"); }
+          if(studentsList.length === 0) { 
+            app.toggleLoader(false); 
+            return tg.showAlert("Excel faylda o'qish uchun ma'lumot topilmadi!"); 
+          }
 
-          const res = await API.bulkCreateStudents(studentsList, app.currentUser.class_id, app.currentUser.class_name);
+          const res = await API.bulkCreateStudents(studentsList, app.activeClassId, app.activeClassName);
           app.toggleLoader(false);
+          
           if (res.success) {
             tg.showAlert(`${res.count} nafar o'quvchi muvaffaqiyatli yuklandi!`);
             document.getElementById('form-t-add-student-excel').reset();
             app.goBack();
-          } else { tg.showAlert(res.error || "Xatolik yuz berdi"); }
+          } else { 
+            tg.showAlert(res.error || "Xatolik yuz berdi"); 
+          }
         } catch (error) {
-          app.toggleLoader(false); tg.showAlert("Faylni o'qishda xatolik: " + error.message);
+          app.toggleLoader(false); 
+          tg.showAlert("Faylni o'qishda xatolik: " + error.message);
         }
       };
       reader.readAsArrayBuffer(file);
@@ -295,24 +486,29 @@ const app = {
     document.getElementById('form-t-edit-student').addEventListener('submit', async (e) => {
       e.preventDefault();
       const stId = document.getElementById('edit-st-id').value;
-      const file = document.getElementById('edit-st-photo').files[0];
       
       app.toggleLoader(true);
+      const photoBlob = await app.getBlobFromPreview('edit-st-preview-photo');
       let photoUrl = document.getElementById('edit-st-preview-photo').src;
-      if (file) {
-        const newUrl = await API.uploadImage(file);
+      
+      if (photoBlob) {
+        const newUrl = await API.uploadImage(photoBlob);
         if (newUrl) photoUrl = newUrl;
       }
 
       const data = {
-        full_name: document.getElementById('edit-st-name').value, photo_url: photoUrl,
-        permanent_address: document.getElementById('edit-st-perm').value, dormitory_address: document.getElementById('edit-st-dorm').value,
-        parent_phone: document.getElementById('edit-st-parent').value, dormitory_phone: document.getElementById('edit-st-dormphone').value,
+        full_name: document.getElementById('edit-st-name').value, 
+        photo_url: photoUrl,
+        permanent_address: document.getElementById('edit-st-perm').value, 
+        dormitory_address: document.getElementById('edit-st-dorm').value,
+        parent_phone: document.getElementById('edit-st-parent').value, 
+        dormitory_phone: document.getElementById('edit-st-dormphone').value,
         certificates: app.gatherCertificates('edit-st-certs-container')
       };
 
       const res = await API.updateStudent(stId, data);
       app.toggleLoader(false);
+      
       if(res.success) {
         tg.showAlert("O'quvchi ma'lumotlari yangilandi!");
         app.goBack(); 
@@ -333,13 +529,17 @@ const app = {
 
   loadTeacherStudents: async () => {
     app.toggleLoader(true);
-    const res = await API.getStudentsByClass(app.currentUser.class_id);
+    const res = await API.getStudentsByClass(app.activeClassId);
     app.toggleLoader(false);
     
     if(res.success) {
       app.teacherStudentsData = res.data;
-      const c = document.getElementById('t-students-list'); c.innerHTML = '';
-      if(res.data.length === 0) return c.innerHTML = "<p style='text-align:center;'>O'quvchilar yo'q.</p>";
+      const c = document.getElementById('t-students-list'); 
+      c.innerHTML = '';
+      
+      if(res.data.length === 0) {
+        return c.innerHTML = "<p style='text-align:center;'>Ushbu sinfda o'quvchilar mavjud emas.</p>";
+      }
 
       res.data.forEach(st => {
         c.innerHTML += `
@@ -376,7 +576,9 @@ const app = {
     document.getElementById('edit-st-parent').value = st.parent_phone;
     document.getElementById('edit-st-dormphone').value = st.dormitory_phone || '';
     
-    const certBox = document.getElementById('edit-st-certs-container'); certBox.innerHTML = '';
+    const certBox = document.getElementById('edit-st-certs-container'); 
+    certBox.innerHTML = '';
+    
     if(st.certificates && st.certificates.length > 0) {
       st.certificates.forEach(c => app.addCertificateField('edit-st-certs-container', c.name, c.level, c.percent));
     }
@@ -384,45 +586,61 @@ const app = {
   },
 
   deleteStudent: (id) => {
-    tg.showConfirm("Haqiqatan ham o'chirib yubormoqchimisiz?", async (confirm) => {
+    tg.showConfirm("Haqiqatan ham ushbu o'quvchini o'chirib yubormoqchimisiz?", async (confirm) => {
       if(confirm) {
         app.toggleLoader(true);
         const res = await API.deleteStudent(id);
         app.toggleLoader(false);
-        if(res.success) { tg.showAlert("O'quvchi o'chirildi!"); app.loadTeacherStudents(); }
+        if(res.success) { 
+          tg.showAlert("O'quvchi muvaffaqiyatli o'chirildi!"); 
+          app.loadTeacherStudents(); 
+        }
       }
     });
   },
 
   // =====================================
-  // DAVOMAT QILISH (KECH KELDI BILAN)
+  // DAVOMAT QILISH
   // =====================================
   openAttendance: async () => {
     app.toggleLoader(true);
-    const res = await API.getStudentsByClass(app.currentUser.class_id);
+    const res = await API.getStudentsByClass(app.activeClassId);
     app.toggleLoader(false);
     
     if(res.success) {
-      const c = document.getElementById('attendance-list'); c.innerHTML = '';
+      const c = document.getElementById('attendance-list'); 
+      c.innerHTML = '';
+      
       if(res.data.length === 0) {
-        c.innerHTML = "<p style='text-align:center;'>O'quvchilar ro'yxati bo'sh.</p>";
+        c.innerHTML = "<p style='text-align:center;'>O'quvchilar ro'yxati bo'sh. Avval o'quvchi qo'shing.</p>";
       } else {
         res.data.forEach(st => {
           c.innerHTML += `
             <div class="attendance-item" id="att-box-${st.id}">
-              <div class="student-info-row"><img src="${st.photo_url}" alt=""><span>${st.full_name}</span></div>
-              <div class="radio-group">
-                <label class="radio-btn keldi"><input type="radio" name="att_${st.id}" value="keldi" checked onchange="app.toggleComment('${st.id}')"> Keldi</label>
-                <label class="radio-btn kech_keldi"><input type="radio" name="att_${st.id}" value="kech_keldi" onchange="app.toggleComment('${st.id}')"> Kech</label>
-                <label class="radio-btn sababli"><input type="radio" name="att_${st.id}" value="sababli" onchange="app.toggleComment('${st.id}')"> Sababli</label>
-                <label class="radio-btn sababsiz"><input type="radio" name="att_${st.id}" value="sababsiz" onchange="app.toggleComment('${st.id}')"> Sababsiz</label>
+              <div class="student-info-row">
+                <img src="${st.photo_url}" alt="">
+                <span>${st.full_name}</span>
               </div>
-              <input type="text" id="comment_${st.id}" class="comment-input custom-form" placeholder="Izoh yozing (majburiy emas)..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+              <div class="radio-group">
+                <label class="radio-btn keldi">
+                  <input type="radio" name="att_${st.id}" value="keldi" checked onchange="app.toggleComment('${st.id}')"> Keldi
+                </label>
+                <label class="radio-btn kech_keldi">
+                  <input type="radio" name="att_${st.id}" value="kech_keldi" onchange="app.toggleComment('${st.id}')"> Kech
+                </label>
+                <label class="radio-btn sababli">
+                  <input type="radio" name="att_${st.id}" value="sababli" onchange="app.toggleComment('${st.id}')"> Sababli
+                </label>
+                <label class="radio-btn sababsiz">
+                  <input type="radio" name="att_${st.id}" value="sababsiz" onchange="app.toggleComment('${st.id}')"> Sababsiz
+                </label>
+              </div>
+              <input type="text" id="comment_${st.id}" class="comment-input custom-form" placeholder="Kechikish yoki sababni yozing..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
             </div>
           `;
         });
       }
-      document.getElementById('att-class-title').innerText = `${app.currentUser.class_name} - Davomat`;
+      document.getElementById('att-class-title').innerText = `${app.activeClassName} - Davomat`;
       app.showScreen('screen-attendance');
     }
   },
@@ -430,34 +648,49 @@ const app = {
   toggleComment: (id) => {
     const box = document.getElementById(`att-box-${id}`);
     const r = document.querySelector(`input[name="att_${id}"]:checked`).value;
-    // Keldi'dan tashqari hamma holatda izoh ochiladi
-    if(r !== 'keldi') box.classList.add('show-comment');
-    else box.classList.remove('show-comment');
+    
+    if(r !== 'keldi') {
+      box.classList.add('show-comment');
+    } else {
+      box.classList.remove('show-comment');
+    }
   },
 
   submitAttendance: async () => {
     const items = document.querySelectorAll('.attendance-item');
-    if(items.length === 0) return tg.showAlert("Davomat qilish uchun o'quvchilar yo'q!");
+    if(items.length === 0) {
+      return tg.showAlert("Davomat qilish uchun o'quvchilar yo'q!");
+    }
 
     const records = [];
     items.forEach(item => {
       const id = item.id.replace('att-box-', '');
       const status = document.querySelector(`input[name="att_${id}"]:checked`).value;
       const comment = document.getElementById(`comment_${id}`).value;
-      if (status !== 'keldi') records.push({ studentId: id, status, comment: comment || '' });
+      
+      if (status !== 'keldi') {
+        records.push({ studentId: id, status, comment: comment || '' });
+      }
     });
 
     app.toggleLoader(true);
     const res = await API.saveAttendance({
-      classId: app.currentUser.class_id, className: app.currentUser.class_name, teacherId: app.currentUser.id,
-      date: new Date().toISOString().split('T')[0], records
+      classId: app.activeClassId, 
+      className: app.activeClassName, 
+      teacherId: app.currentUser.id,
+      date: new Date().toISOString().split('T')[0], 
+      records
     });
     app.toggleLoader(false);
-    if(res.success) { tg.showAlert("Davomat saqlandi!"); app.goBack(); }
+    
+    if(res.success) { 
+      tg.showAlert("Davomat muvaffaqiyatli saqlandi!"); 
+      app.goBack(); 
+    }
   },
 
   // =====================================
-  // ADMIN BO'LIMI VA MONITORING
+  // ADMIN BO'LIMI VA STATISTIKA
   // =====================================
   adminLoadClasses: async () => {
     const date = new Date().toISOString().split('T')[0];
@@ -466,7 +699,9 @@ const app = {
     app.toggleLoader(false);
 
     if(res.success) {
-      const c = document.getElementById('admin-classes-list'); c.innerHTML = '';
+      const c = document.getElementById('admin-classes-list'); 
+      c.innerHTML = '';
+      
       res.data.forEach(cls => {
         c.innerHTML += `
           <div class="student-card" style="cursor:pointer;" onclick="app.adminOpenClass('${cls.id}', '${cls.class_name}')">
@@ -499,7 +734,9 @@ const app = {
       const mon = await API.getMonitoring(date);
       const absentIds = mon.success ? mon.data.map(m => m.id) : [];
 
-      const c = document.getElementById('admin-class-students'); c.innerHTML = '';
+      const c = document.getElementById('admin-class-students'); 
+      c.innerHTML = '';
+      
       res.data.forEach(st => {
         const isAbsent = absentIds.includes(st.id);
         c.innerHTML += `
@@ -520,9 +757,12 @@ const app = {
     app.toggleLoader(true);
     const res = await API.getTeachers();
     app.toggleLoader(false);
+    
     if(res.success) {
       app.teacherStudentsData = res.data; 
-      const c = document.getElementById('admin-teachers-list'); c.innerHTML = '';
+      const c = document.getElementById('admin-teachers-list'); 
+      c.innerHTML = '';
+      
       res.data.forEach(t => {
         c.innerHTML += `
           <div class="student-card" style="cursor:pointer;" onclick="app.showTeacherDetails('${t.id}')">
@@ -540,7 +780,9 @@ const app = {
 
   adminLoadMonitoring: async () => {
     let dateInput = document.getElementById('monitoring-date');
-    if(!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+    if(!dateInput.value) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
     
     app.toggleLoader(true);
     const res = await API.getMonitoring(dateInput.value);
@@ -552,14 +794,15 @@ const app = {
       
       document.getElementById('admin-monitoring-list').innerHTML = '';
       document.getElementById('monitoring-list-title').style.display = 'none';
-
       app.showScreen('screen-admin-monitoring');
     }
   },
 
   renderChart: (stats) => {
     const ctx = document.getElementById('attendanceChart').getContext('2d');
-    if (app.chartInstance) app.chartInstance.destroy(); 
+    if (app.chartInstance) {
+      app.chartInstance.destroy(); 
+    }
 
     app.chartInstance = new Chart(ctx, {
       type: 'doughnut',
@@ -577,7 +820,7 @@ const app = {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom' },
-          title: { display: true, text: `Jami o'quvchi: ${stats.total}` }
+          title: { display: true, text: `Jami noyob o'quvchi: ${stats.total}` }
         },
         onClick: (event, elements) => {
           if (elements.length > 0) {
@@ -591,7 +834,9 @@ const app = {
   },
 
   filterMonitoringList: (status) => {
-    const c = document.getElementById('admin-monitoring-list'); c.innerHTML = '';
+    const c = document.getElementById('admin-monitoring-list'); 
+    c.innerHTML = '';
+    
     const title = document.getElementById('monitoring-list-title');
     title.style.display = 'block';
     
@@ -601,12 +846,14 @@ const app = {
     }
 
     const filtered = app.adminMonitoringData.filter(st => st.status === status);
+    
     if(filtered.length === 0) {
-      title.innerText = `Bu toifada (${status.replace('_', ' ')}) o'quvchilar yo'q.`;
+      title.innerText = `Ushbu toifada (${status.replace('_', ' ')}) o'quvchilar yo'q.`;
       return;
     }
 
     title.innerText = `${status.replace('_', ' ').toUpperCase()} o'quvchilar ro'yxati:`;
+    
     filtered.forEach(st => {
       let bClass = status === 'sababli' ? 'warning' : (status === 'kech_keldi' ? 'blue' : 'red');
       c.innerHTML += `
@@ -626,7 +873,9 @@ const app = {
   // QIDIRUV (ADMIN)
   // =====================================
   searchStudents: (query) => {
-    if (app.searchTimeout) clearTimeout(app.searchTimeout);
+    if (app.searchTimeout) {
+      clearTimeout(app.searchTimeout);
+    }
     
     app.searchTimeout = setTimeout(async () => {
       if(!query.trim()) {
@@ -642,6 +891,7 @@ const app = {
         app.currentAdminSearchData = res.data;
         const c = document.getElementById('admin-search-results');
         c.innerHTML = '';
+        
         if(res.data.length === 0) {
           c.innerHTML = '<p style="text-align:center;">Bunday o\'quvchi topilmadi.</p>';
         } else {
@@ -658,7 +908,7 @@ const app = {
           });
         }
       }
-    }, 500); // 500ms dan keyin so'rov jo'natadi (Qotib qolmasligi uchun)
+    }, 500); 
   },
 
   // =====================================
@@ -675,16 +925,20 @@ const app = {
       document.getElementById('reminder-time').value = resSettings.time;
     }
     
-    // Selectlarga ma'lumot to'ldirish
     if (resClasses.success) {
       const s1 = document.getElementById('delete-class-select');
       s1.innerHTML = '<option value="">Sinfni tanlang...</option>';
-      resClasses.data.forEach(c => s1.innerHTML += `<option value="${c.id}">${c.class_name}</option>`);
+      resClasses.data.forEach(c => {
+        s1.innerHTML += `<option value="${c.id}">${c.class_name}</option>`;
+      });
     }
+    
     if (resTeachers.success) {
       const s2 = document.getElementById('delete-teacher-select');
       s2.innerHTML = '<option value="">O\'qituvchini tanlang...</option>';
-      resTeachers.data.forEach(t => s2.innerHTML += `<option value="${t.id}">${t.full_name} (${t.username})</option>`);
+      resTeachers.data.forEach(t => {
+        s2.innerHTML += `<option value="${t.id}">${t.full_name} (${t.username})</option>`;
+      });
     }
 
     app.showScreen('screen-admin-settings');
@@ -694,6 +948,7 @@ const app = {
     document.getElementById('form-broadcast').addEventListener('submit', async (e) => {
       e.preventDefault();
       const msg = document.getElementById('broadcast-message').value;
+      
       app.toggleLoader(true);
       const res = await API.sendBroadcast(msg);
       app.toggleLoader(false);
@@ -701,28 +956,39 @@ const app = {
       if (res.success) {
         tg.showAlert(`${res.count} nafar foydalanuvchiga e'lon yuborildi!`);
         document.getElementById('form-broadcast').reset();
-      } else tg.showAlert("Xatolik yuz berdi");
+      } else {
+        tg.showAlert("E'lon yuborishda xatolik yuz berdi");
+      }
     });
 
     document.getElementById('form-settings').addEventListener('submit', async (e) => {
       e.preventDefault();
       const time = document.getElementById('reminder-time').value;
+      
       app.toggleLoader(true);
       const res = await API.saveSettings(time);
       app.toggleLoader(false);
-      if (res.success) tg.showAlert(`Eslatma vaqti ${time} ga o'zgartirildi!`);
+      
+      if (res.success) {
+        tg.showAlert(`Eslatma vaqti ${time} ga o'zgartirildi!`);
+      }
     });
 
     document.getElementById('form-delete-class').addEventListener('submit', async (e) => {
       e.preventDefault();
       const cId = document.getElementById('delete-class-select').value;
-      if(!cId) return tg.showAlert("Sinfni tanlang!");
-      tg.showConfirm("Ushbu sinfni butunlay o'chirib tashlaysizmi? O'quvchilar sinfsiz qoladi.", async (conf) => {
+      if(!cId) return tg.showAlert("O'chirish uchun sinfni tanlang!");
+      
+      tg.showConfirm("Ushbu sinfni butunlay o'chirib tashlaysizmi? O'quvchilar sinfsiz holatga o'tadi.", async (conf) => {
         if(conf) {
           app.toggleLoader(true);
           const res = await API.deleteClass(cId);
           app.toggleLoader(false);
-          if(res.success) { tg.showAlert("Sinf o'chirildi."); app.openAdminSettings(); }
+          
+          if(res.success) { 
+            tg.showAlert("Sinf muvaffaqiyatli o'chirildi."); 
+            app.openAdminSettings(); 
+          }
         }
       });
     });
@@ -730,13 +996,18 @@ const app = {
     document.getElementById('form-delete-teacher').addEventListener('submit', async (e) => {
       e.preventDefault();
       const tId = document.getElementById('delete-teacher-select').value;
-      if(!tId) return tg.showAlert("O'qituvchini tanlang!");
-      tg.showConfirm("O'qituvchini tizimdan o'chirasizmi? U boshqa tizimga kira olmaydi.", async (conf) => {
+      if(!tId) return tg.showAlert("O'chirish uchun o'qituvchini tanlang!");
+      
+      tg.showConfirm("O'qituvchini tizimdan butunlay o'chirasizmi? U boshqa tizimga kira olmaydi.", async (conf) => {
         if(conf) {
           app.toggleLoader(true);
           const res = await API.deleteTeacher(tId);
           app.toggleLoader(false);
-          if(res.success) { tg.showAlert("O'qituvchi o'chirildi."); app.openAdminSettings(); }
+          
+          if(res.success) { 
+            tg.showAlert("O'qituvchi muvaffaqiyatli o'chirildi."); 
+            app.openAdminSettings(); 
+          }
         }
       });
     });
@@ -746,8 +1017,6 @@ const app = {
   // PROFIL (TAHRIRLASH)
   // =====================================
   setupProfileListeners: () => {
-    document.getElementById('edit-photo').addEventListener('change', (e) => app.previewImage(e, 'edit-preview-photo'));
-
     document.getElementById('form-edit-profile').addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = {
@@ -759,10 +1028,11 @@ const app = {
       if(app.currentUser.role === 'teacher') {
         data.address = document.getElementById('edit-address').value;
         data.phone = document.getElementById('edit-phone').value;
-        const file = document.getElementById('edit-photo').files[0];
-        if(file) {
+        
+        const photoBlob = await app.getBlobFromPreview('edit-preview-photo');
+        if(photoBlob) {
           app.toggleLoader(true);
-          data.photo_url = await API.uploadImage(file);
+          data.photo_url = await API.uploadImage(photoBlob);
           app.toggleLoader(false);
         }
       }
@@ -772,8 +1042,9 @@ const app = {
       app.toggleLoader(false);
 
       if(res.success) {
-        app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
-        tg.showAlert("Profil yangilandi!");
+        app.currentUser = res.user; 
+        localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
+        tg.showAlert("Profil ma'lumotlari muvaffaqiyatli yangilandi!");
         app.goBack();
       }
     });
@@ -796,31 +1067,25 @@ const app = {
       document.getElementById('edit-address').parentElement.classList.add('hidden');
       document.getElementById('edit-phone').parentElement.classList.add('hidden');
     }
+    
     app.showScreen('screen-profile');
   },
 
   // =====================================
-  // YORDAMCHI FUNKSIYALAR VA MODALLAR
+  // MODALLAR VA YORDAMCHI FUNKSIYALAR
   // =====================================
-  previewImage: (e, imgId) => {
-    if(e.target.files[0]) {
-      const r = new FileReader(); 
-      r.onload = (ev) => document.getElementById(imgId).src = ev.target.result;
-      r.readAsDataURL(e.target.files[0]);
-    }
-  },
-
   addCertificateField: (containerId, name = '', level = '', percent = '') => {
     const c = document.getElementById(containerId);
     if (c.querySelectorAll('.certificate-group').length >= 5) {
       return tg.showAlert("Maksimal 5 ta sertifikat qo'shish mumkin!");
     }
 
-    const div = document.createElement('div'); div.className = 'certificate-group custom-form';
+    const div = document.createElement('div'); 
+    div.className = 'certificate-group custom-form';
     div.innerHTML = `
-      <input type="text" class="cert-name" placeholder="Sertifikat (masalan: IELTS)" value="${name}">
+      <input type="text" class="cert-name" placeholder="Sertifikat nomi (masalan: IELTS)" value="${name}">
       <input type="text" class="cert-level" placeholder="Daraja (masalan: B2)" value="${level}">
-      <input type="number" class="cert-percent" placeholder="Foiz" value="${percent}">
+      <input type="number" class="cert-percent" placeholder="Foiz (M: 85)" value="${percent}">
       <button type="button" style="padding:10px; background:var(--danger); color:white; border:none; border-radius:8px;" onclick="this.parentElement.remove()">O'chirish</button>
       <hr style="margin: 10px 0; border:0; height:1px; background:var(--border);">
     `;
@@ -839,9 +1104,6 @@ const app = {
     return certs;
   },
 
-  // =====================================
-  // DAVOMAT DAFTARCHASI (Tarix)
-  // =====================================
   openDiaryModal: async (stId, stName) => {
     app.toggleLoader(true);
     const res = await API.getStudentAttendance(stId);
@@ -875,17 +1137,21 @@ const app = {
     document.getElementById('diary-modal').classList.add('hidden');
   },
 
-  // O'quvchi to'liq ma'lumoti
   showStudentDetails: (id, context) => {
     let st;
-    if(context === 'admin') st = app.currentAdminClassView.find(s => s.id === id);
-    else if(context === 'teacher') st = app.teacherStudentsData.find(s => s.id === id);
-    else if(context === 'search') st = app.currentAdminSearchData.find(s => s.id === id);
+    if(context === 'admin') {
+      st = app.currentAdminClassView.find(s => s.id === id);
+    } else if(context === 'teacher') {
+      st = app.teacherStudentsData.find(s => s.id === id);
+    } else if(context === 'search') {
+      st = app.currentAdminSearchData.find(s => s.id === id);
+    }
     
     if(!st) return;
+    
     let certs = st.certificates && st.certificates.length > 0 
       ? st.certificates.map(c => `<span class="badge">${c.name} ${c.level} (${c.percent}%)</span>`).join(' ')
-      : 'Yo\'q';
+      : 'Sertifikatlar kiritilmagan';
     
     document.getElementById('modal-body').innerHTML = `
       <img src="${st.photo_url}" class="modal-info-img" alt="">
@@ -900,24 +1166,27 @@ const app = {
       <div class="modal-data-row"><span>Qoldirgan (Sababsiz)</span> <strong style="color:var(--danger);">${st.total_absences?.sababsiz || 0} marta</strong></div>
       <div class="modal-data-row"><span>Kech qolgan</span> <strong style="color:var(--info);">${st.total_absences?.kech_keldi || 0} marta</strong></div>
       
-      <!-- YANGI: Davomat Daftarchasi Tugmasi -->
       <button class="secondary-btn" style="margin-top:20px; width:100%; border:1px solid var(--primary-color);" onclick="app.openDiaryModal('${st.id}', '${st.full_name}')">
         <i class="fa-solid fa-book"></i> Davomat Daftarchasini Ko'rish
       </button>
     `;
+    
     document.getElementById('details-modal').classList.remove('hidden');
   },
 
   showTeacherDetails: (id) => {
     const t = app.teacherStudentsData.find(s => s.id === id);
+    if (!t) return;
+    
     document.getElementById('modal-body').innerHTML = `
       <img src="${t.photo_url || 'https://via.placeholder.com/100'}" class="modal-info-img" alt="">
       <h3 style="text-align:center; margin-bottom:20px;">${t.full_name}</h3>
-      <div class="modal-data-row"><span>Sinf</span> <strong>${t.class_name || "Biriktirilmagan"}</strong></div>
-      <div class="modal-data-row"><span>Telefon</span> <strong>${t.phone}</strong></div>
+      <div class="modal-data-row"><span>Sinflari</span> <strong>${t.class_name || "Biriktirilmagan"}</strong></div>
+      <div class="modal-data-row"><span>Telefon raqami</span> <strong>${t.phone}</strong></div>
       <div class="modal-data-row"><span>Yashash manzili</span> <strong>${t.address}</strong></div>
       <div class="modal-data-row"><span>Login</span> <strong>${t.username}</strong></div>
     `;
+    
     document.getElementById('details-modal').classList.remove('hidden');
   },
 
