@@ -454,8 +454,10 @@ const app = {
         const data = {
           full_name: document.getElementById('t-st-name').value, 
           photoUrl: photoUrl,
-          class_id: app.activeClassId, 
-          class_name: app.activeClassName,
+          // SHU IKKITA QATOR O'ZGARTIRILDI: class_id -> classId va class_name -> className
+          classId: app.activeClassId, 
+          className: app.activeClassName,
+          
           permanent_address: document.getElementById('t-st-perm').value, 
           dormitory_address: document.getElementById('t-st-dorm').value,
           parent_phone: document.getElementById('t-st-parent').value, 
