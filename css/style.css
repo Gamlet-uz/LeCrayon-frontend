@@ -15,8 +15,8 @@
   --success: #34c759;
   --warning: #ff9500;
   --danger: #ff3b30;
-  --info: #007aff; /* Kech keldi uchun yangi rang (Ko'k) */
-  --border: rgba(0, 0, 0, 0.1);
+  --info: #007aff; /* Kech keldi uchun */
+  --border: rgba(150, 150, 150, 0.2);
   --card-radius: 12px;
 }
 
@@ -109,7 +109,7 @@ body {
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.6);
   backdrop-filter: blur(4px);
-  z-index: 999;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -230,6 +230,7 @@ body {
   gap: 8px;
 }
 .primary-btn:active { opacity: 0.8; }
+
 .secondary-btn {
   background-color: transparent;
   color: var(--primary-color);
@@ -240,6 +241,7 @@ body {
   width: 100%;
   cursor: pointer;
 }
+.secondary-btn:active { background: rgba(51, 144, 236, 0.1); }
 
 /* Rasm yuklash va Kamera */
 .photo-upload-container {
@@ -251,6 +253,16 @@ body {
 .photo-upload-container input[type="file"] { display: none; }
 .upload-btn {
   color: var(--primary-color); font-weight: 600; padding: 5px 15px; background: var(--secondary-bg); border-radius: 20px; border: 1px solid var(--border); cursor: pointer;
+}
+
+/* =========================================================
+   CROPPER.JS MAXSUS DIZAYNLARI (Rasmni qirqish uchun)
+   ========================================================= */
+.cropper-view-box, .cropper-face {
+  border-radius: 50%; /* O'quvchi avatari uchun ramkani dumaloq qiladi */
+}
+.cropper-modal {
+  opacity: 0.7; /* Qirqilmaydigan fon qoramtirligi */
 }
 
 /* =========================================================
@@ -287,10 +299,6 @@ body {
   border: 2px solid var(--danger);
   background: rgba(255, 59, 48, 0.05);
 }
-.student-card.late-border {
-  border: 2px solid var(--info);
-  background: rgba(0, 122, 255, 0.05);
-}
 
 /* Kartochka ichidagi Tahrirlash va O'chirish tugmalari qismi */
 .student-actions {
@@ -324,7 +332,7 @@ body {
 .badge.red { background: var(--danger); } 
 .badge.green { background: var(--success); }
 .badge.warning { background: var(--warning); }
-.badge.blue { background: var(--info); } /* Kech qolganlar uchun yangi */
+.badge.blue { background: var(--info); } /* Kech qolganlar uchun */
 
 /* =========================================================
    DAVOMAT EKRANI VA RADIO TUGMALAR
@@ -342,7 +350,7 @@ body {
 /* 4 ta holat uchun radio guruh */
 .radio-group { 
   display: grid; 
-  grid-template-columns: 1fr 1fr; /* 2 ta qator, 2 ta ustun chiroyliroq turishi uchun */
+  grid-template-columns: 1fr 1fr;
   gap: 8px; 
 }
 .radio-btn {
@@ -376,7 +384,7 @@ body {
 }
 
 /* =========================================================
-   MODALLAR (To'liq ma'lumot va Davomat Daftarchasi)
+   MODALLAR (To'liq ma'lumot, Davomat Daftarchasi, Crop)
    ========================================================= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -399,6 +407,7 @@ body {
   width: 32px; height: 32px;
   font-size: 18px; color: var(--text-color); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
+  z-index: 10;
 }
 .modal-info-img {
   width: 100px; height: 100px; border-radius: 50%;
