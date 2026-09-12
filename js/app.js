@@ -117,12 +117,11 @@ const app = {
   // =====================================
   formatPhones: (phoneStr) => {
     if (!phoneStr) return '-';
-    // Vergul orqali ajratib olamiz
     const phones = String(phoneStr).split(',').map(p => p.trim()).filter(p => p);
     if (phones.length === 0) return '-';
     if (phones.length === 1) return `<strong>${phones[0]}</strong>`;
     
-    // Agar raqamlar ko'p bo'lsa (Siz xohlagan dizayn)
+    // Raqamlar ko'p bo'lsa
     let html = `
       <div style="cursor:pointer; display:flex; justify-content:flex-end; align-items:center; gap:5px;" onclick="const el=this.nextElementSibling; el.style.display=el.style.display==='none'?'flex':'none';">
         <strong style="color:var(--primary-color);">${phones[0]}</strong> 
@@ -180,7 +179,6 @@ const app = {
           return tg.showAlert("Telegram versiyangiz eskirgan (7.2 dan yuqori bo'lishi kerak). Iltimos yangilang.");
         }
         
-        // Agar initsializatsiya qilinmagan bo'lsa qilamiz
         if (!tg.BiometricManager.isInited) tg.BiometricManager.init();
 
         setTimeout(() => {
@@ -235,7 +233,6 @@ const app = {
 
           tg.BiometricManager.requestAccess({ reason: "Parolsiz kirish uchun yuzni tanishni faollashtiring" }, (granted) => {
             if (granted) {
-              // Super xavfsiz token saqlash
               const tokenToSave = `${app.currentUser.username}:::${app.currentUser.password}`;
               tg.BiometricManager.updateBiometricToken(tokenToSave, (updated) => {
                 if(updated) {
@@ -318,7 +315,6 @@ const app = {
             app.cropTargetPreviewId = previewId;
           };
           reader.readAsDataURL(file);
-          // O'sha rasmni yana tanlash muammosini oldini olish:
           e.target.value = ''; 
         }
       });
@@ -346,12 +342,21 @@ const app = {
     app.closeCropModal();
   },
 
+  // "Failed to fetch" xatosini hal qiluvchi funksiya
   getBlobFromPreview: async (imgId) => {
     try {
       const src = document.getElementById(imgId).src;
       if (src && src.startsWith('data:image')) {
-        const res = await fetch(src);
-        return await res.blob();
+        // Fetch o'rniga base64 dan to'g'ridan-to'g'ri Blob'ga (binar faylga) o'giramiz
+        const arr = src.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], {type: mime});
       }
       return null; 
     } catch(err) {
