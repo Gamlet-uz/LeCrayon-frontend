@@ -47,7 +47,6 @@
           
           <div class="divider">Yoki</div>
           <button type="button" id="btn-faceid-login" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center; padding: 12px; font-size:16px;">
-            <!-- Barmoq izi o'rniga Face ID ikonkasiga o'zgartirildi -->
             <i class="fa-solid fa-user-check" style="font-size:20px;"></i> Face ID bilan kirish
           </button>
         </form>
@@ -69,9 +68,9 @@
       <form id="form-setup-teacher" class="custom-form">
         <div class="photo-upload-container">
           <img id="teacher-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
-          <!-- Old kamerani ochish uchun capture="user" qo'shildi -->
-          <input type="file" id="teacher-photo" accept="image/*" capture="user">
-          <label for="teacher-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasmga olish (Ixtiyoriy)</label>
+          <!-- capture="user" olib tashlandi -->
+          <input type="file" id="teacher-photo" accept="image/*">
+          <label for="teacher-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish (Ixtiyoriy)</label>
         </div>
         <input type="text" id="teacher-fullname" required placeholder="F.I.SH (To'liq ismingiz)">
         <input type="text" id="teacher-address" required placeholder="Yashash manzili">
@@ -216,9 +215,9 @@
       <form id="form-t-add-student-manual" class="custom-form">
         <div class="photo-upload-container">
           <img id="t-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
-          <!-- O'quvchi qo'shishda asosan orqa kamerani ochish uchun capture="environment" qo'shildi -->
-          <input type="file" id="t-student-photo-input" accept="image/*" capture="environment">
-          <label for="t-student-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasmga olish (Ixtiyoriy)</label>
+          <!-- capture="environment" olib tashlandi -->
+          <input type="file" id="t-student-photo-input" accept="image/*">
+          <label for="t-student-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish (Ixtiyoriy)</label>
         </div>
         <input type="text" id="t-st-name" required placeholder="To'liq ism (F.I.SH)">
         <input type="text" id="t-st-perm" required placeholder="Doimiy yashash manzili">
@@ -245,8 +244,9 @@
         <input type="hidden" id="edit-st-id">
         <div class="photo-upload-container">
           <img id="edit-st-preview-photo" src="" alt="">
-          <input type="file" id="edit-st-photo-input" accept="image/*" capture="environment">
-          <label for="edit-st-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Yangi rasm</label>
+          <!-- capture="environment" olib tashlandi -->
+          <input type="file" id="edit-st-photo-input" accept="image/*">
+          <label for="edit-st-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Yangi rasm yuklash/olish</label>
         </div>
         <input type="text" id="edit-st-name" required placeholder="To'liq ism (F.I.SH)">
         <input type="text" id="edit-st-perm" required placeholder="Doimiy yashash manzili">
@@ -275,8 +275,9 @@
       <form id="form-edit-profile" class="custom-form">
         <div id="edit-photo-box" class="photo-upload-container hidden">
           <img id="edit-preview-photo" src="" alt="">
-          <input type="file" id="edit-photo-input" accept="image/*" capture="user">
-          <label for="edit-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasmga olish</label>
+          <!-- capture="user" olib tashlandi -->
+          <input type="file" id="edit-photo-input" accept="image/*">
+          <label for="edit-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish</label>
         </div>
         <input type="text" id="edit-fullname" required placeholder="F.I.SH">
         <div class="form-group hidden"><input type="text" id="edit-address" placeholder="Manzil"></div>
@@ -288,7 +289,6 @@
 
         <div class="divider" style="margin-top:20px;">Xavfsizlik</div>
         <button type="button" id="btn-register-faceid" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center;">
-          <!-- Face ID ikonkasiga o'zgartirildi -->
           <i class="fa-solid fa-user-check"></i> Face ID ulash / Yangilash
         </button>
       </form>
