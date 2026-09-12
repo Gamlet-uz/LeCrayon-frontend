@@ -23,10 +23,22 @@ const app = {
   init: () => {
     tg.ready(); 
     tg.expand();
+
+    // 1. BRAUZERDAN KIRISHNI BUTUNLAY TAQIQLLASH
+    const telegramId = tg.initDataUnsafe?.user?.id;
+    if (!telegramId) {
+      document.body.innerHTML = `
+        <div style="padding: 40px 20px; text-align: center; font-family: sans-serif; background: #fff; height: 100vh;">
+          <h2 style="font-size: 24px; color: #ff3b30;"><i class="fa-solid fa-shield-halved"></i> Kirish taqiqlangan!</h2>
+          <p style="margin-top: 15px; color: #333; font-size: 16px; line-height:1.5;">Xavfsizlik sababli oddiy brauzerdan kirish taqiqlangan.<br>Iltimos, dasturga faqat Telegram botingiz ichidagi "Web App" orqali kiring.</p>
+        </div>`;
+      return; 
+    }
+
     document.documentElement.style.setProperty('--bg-color', tg.themeParams.bg_color || '#ffffff');
     document.documentElement.style.setProperty('--text-color', tg.themeParams.text_color || '#000000');
 
-    // TELEGRAM NATIVE BARMOQ IZI INIT (Faqat TG WebApp muhitida ishlaydi)
+    // TELEGRAM NATIVE BARMOQ IZI INIT
     if (tg.isVersionAtLeast('7.2')) {
       tg.BiometricManager.init(() => {
         console.log("Telegram Biometrika yoqildi.");
@@ -115,6 +127,14 @@ const app = {
   // =====================================
   // YORDAMCHI FUNKSIYALAR
   // =====================================
+
+  // O'zbekiston sanasini aniq olish (Tungi xatoliklarni oldini olish uchun)
+  getLocalDate: () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 5);
+    return now.toISOString().split('T')[0];
+  },
+
   formatPhones: (phoneStr) => {
     if (!phoneStr) return '-';
     const phones = String(phoneStr).split(',').map(p => p.trim()).filter(p => p);
@@ -418,7 +438,7 @@ const app = {
         const photoUrl = photoBlob ? await API.uploadImage(photoBlob) : '';
         const data = {
           full_name: document.getElementById('t-st-name').value, 
-          birth_date: document.getElementById('t-st-birth').value, // Yangi sana qator
+          birth_date: document.getElementById('t-st-birth').value, 
           photoUrl: photoUrl,
           classId: app.activeClassId, 
           className: app.activeClassName,
@@ -605,8 +625,8 @@ const app = {
     try {
       app.toggleLoader(true);
       const res = await API.getStudentsByClass(app.activeClassId);
-      // Bugungi kunga davomat yuborilganini tekshirish uchun maxsus API
-      const today = new Date().toISOString().split('T')[0];
+      
+      const today = app.getLocalDate();
       const attRes = await API.getClassAttendanceToday(app.activeClassId, today); 
       app.toggleLoader(false);
       
@@ -633,11 +653,9 @@ const app = {
           }
 
           res.data.forEach(st => {
-            // Standart holat
             let status = 'keldi';
             let comment = '';
             
-            // Agar yuborilgan bo'lsa oldingi qiymatni o'qib olish
             if (isSubmitted) {
                const prev = prevRecords.find(r => r.studentId === st.id);
                if (prev) {
@@ -692,20 +710,27 @@ const app = {
       const id = item.id.replace('att-box-', '');
       const status = document.querySelector(`input[name="att_${id}"]:checked`).value;
       const comment = document.getElementById(`comment_${id}`).value;
-      if (status !== 'keldi') {
-        records.push({ studentId: id, status, comment: comment || '' });
-      }
+      // Hamma o'quvchini (shu jumladan "keldi" deganlarni ham) kiritamiz
+      records.push({ studentId: id, status, comment: comment || '' });
     });
 
     try {
       app.toggleLoader(true);
       const res = await API.saveAttendance({ 
-        classId: app.activeClassId, className: app.activeClassName, 
-        teacherId: app.currentUser.id, date: new Date().toISOString().split('T')[0], records 
+        classId: app.activeClassId, 
+        className: app.activeClassName, 
+        teacherId: app.currentUser.id, 
+        date: app.getLocalDate(), 
+        records 
       });
       app.toggleLoader(false);
       
-      if(res.success) { tg.showAlert("Davomat saqlandi/yangilandi!"); app.goBack(); }
+      if(res.success) { 
+        tg.showAlert("Davomat saqlandi/yangilandi!"); 
+        app.goBack(); 
+      } else {
+        tg.showAlert(res.error || "Xatolik yuz berdi");
+      }
     } catch(err) { app.toggleLoader(false); tg.showAlert("Xatolik: " + err.message); }
   },
 
@@ -715,7 +740,7 @@ const app = {
   adminLoadClasses: async () => {
     try {
       app.toggleLoader(true); 
-      const res = await API.getClassesStats(new Date().toISOString().split('T')[0]); 
+      const res = await API.getClassesStats(app.getLocalDate()); 
       app.toggleLoader(false);
       
       if(res.success) {
@@ -750,7 +775,7 @@ const app = {
         app.currentAdminClassView = res.data; 
         document.getElementById('admin-class-title').innerText = `${className} O'quvchilari`;
         
-        const mon = await API.getMonitoring(new Date().toISOString().split('T')[0]);
+        const mon = await API.getMonitoring(app.getLocalDate());
         const absentIds = mon.success ? mon.data.map(m => m.id) : [];
 
         const c = document.getElementById('admin-class-students'); 
@@ -795,7 +820,7 @@ const app = {
 
   adminLoadMonitoring: async () => {
     let dateInput = document.getElementById('monitoring-date'); 
-    if(!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+    if(!dateInput.value) dateInput.value = app.getLocalDate();
     
     try {
       app.toggleLoader(true); const res = await API.getMonitoring(dateInput.value); app.toggleLoader(false);
@@ -858,7 +883,6 @@ const app = {
   },
 
   searchStudents: (query) => {
-    // KIRILLDAN LOTINCHAGA AVTOMATIK ALMASHTIRISH (ON INPUT)
     const latinQuery = app.cyrillicToLatin(query);
     document.getElementById('admin-search-input').value = latinQuery; 
 
@@ -889,7 +913,7 @@ const app = {
     try {
       app.toggleLoader(true); 
       const resSettings = await API.getSettings(); 
-      const resClasses = await API.getClassesStats(new Date().toISOString().split('T')[0]); 
+      const resClasses = await API.getClassesStats(app.getLocalDate()); 
       const resTeachers = await API.getTeachers(); 
       app.toggleLoader(false);
       
@@ -915,7 +939,7 @@ const app = {
       } catch(err) { app.toggleLoader(false); } 
     });
 
-    // BARCHA O'QUVCHILARNI EXCEL ORQALI YUKLASH (YANGI)
+    // BARCHA O'QUVCHILARNI EXCEL ORQALI YUKLASH
     document.getElementById('form-admin-bulk-students')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const file = document.getElementById('admin-excel-file').files[0];
@@ -944,7 +968,7 @@ const app = {
              studentsList.push({
                full_name: String(r[0] || ''),
                birth_date: String(r[1] || ''),
-               class_name: String(r[2] || ''), // Sinf orqali ID lar backendda shakllantiriladi
+               class_name: String(r[2] || ''), 
                permanent_address: String(r[3] || ''),
                dormitory_address: String(r[4] || ''),
                parent_phone: String(r[5] || ''),
@@ -1007,7 +1031,8 @@ const app = {
         const data = { 
           full_name: document.getElementById('edit-fullname').value, 
           username: document.getElementById('edit-username').value, 
-          password: document.getElementById('edit-password').value 
+          password: document.getElementById('edit-password').value,
+          telegram_id: document.getElementById('edit-telegram-id').value
         };
         if(app.currentUser.role === 'teacher') {
           data.address = document.getElementById('edit-address').value; 
@@ -1025,6 +1050,8 @@ const app = {
     document.getElementById('edit-fullname').value = app.currentUser.full_name; 
     document.getElementById('edit-username').value = app.currentUser.username; 
     document.getElementById('edit-password').value = app.currentUser.password;
+    document.getElementById('edit-telegram-id').value = app.currentUser.telegram_id || '';
+    
     if(app.currentUser.role === 'teacher') {
       document.getElementById('edit-photo-box').classList.remove('hidden'); 
       document.getElementById('edit-preview-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100';
@@ -1043,7 +1070,6 @@ const app = {
   // =====================================
   addCertificateField: (containerId, name = '', level = '', percent = '') => {
     const c = document.getElementById(containerId);
-    // SERTIFIKAT MAXSIMAL 10 TA (Qoida qo'yildi)
     if (c.querySelectorAll('.certificate-group').length >= 10) return tg.showAlert("Maksimal 10 ta sertifikat qo'shish mumkin!");
     
     const div = document.createElement('div'); div.className = 'certificate-group custom-form';
@@ -1101,10 +1127,7 @@ const app = {
     document.getElementById('modal-body').innerHTML = `
       <img src="${st.photo_url}" class="modal-info-img" alt="">
       <h3 style="text-align:center; margin-bottom:10px;">${st.full_name}</h3>
-      
-      <!-- Tug'ilgan sana qo'shildi -->
       <div class="modal-data-row"><span>Tug'ilgan sana</span> <strong>${st.birth_date || 'Noma\'lum'}</strong></div>
-      
       <div class="modal-data-row"><span>Sinf</span> <strong>${st.class_name || 'Sinfsiz'}</strong></div>
       <div class="modal-data-row"><span>Doimiy manzil</span> <strong>${st.permanent_address}</strong></div>
       <div class="modal-data-row"><span>Yotoqxona</span> <strong>${st.dormitory_address || '-'}</strong></div>
