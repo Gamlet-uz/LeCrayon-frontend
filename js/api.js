@@ -1,7 +1,4 @@
 const API = {
-  // =====================================
-  // AVTORIZATSIYA VA PROFIL
-  // =====================================
   login: async (username, password, telegramId = null) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -42,38 +39,6 @@ const API = {
     } catch { return null; }
   },
 
-  // =====================================
-  // YANGI: FACE ID VA WEBAUTHN API'LARI
-  // =====================================
-  registerFaceIdGenerate: async (username) => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/register/generate`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
-    });
-    return res.json();
-  },
-  registerFaceIdVerify: async (username, attResp) => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/register/verify`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, attResp })
-    });
-    return res.json();
-  },
-  loginFaceIdGenerate: async () => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/login/generate`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }
-    });
-    return res.json();
-  },
-  loginFaceIdVerify: async (authResp, sessionId, telegramId = null) => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/login/verify`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ authResp, sessionId, telegramId })
-    });
-    return res.json();
-  },
-
-  // =====================================
-  // SINFLAR VA KO'P SINFLI O'QITUVCHI
-  // =====================================
   createClass: async (className, teacherId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ className, teacherId })
@@ -94,15 +59,11 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/classes-stats?date=${date}`);
     return res.json();
   },
-  // YANGI: O'qituvchining BARCHA sinflarini olib kelish
   getTeacherClasses: async (teacherId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/teacher/classes/${teacherId}`);
     return res.json();
   },
 
-  // =====================================
-  // O'QUVCHILAR
-  // =====================================
   createStudent: async (studentData) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(studentData)
@@ -134,9 +95,6 @@ const API = {
     return res.json();
   },
 
-  // =====================================
-  // DAVOMAT VA O'QITUVCHILAR (ADMIN)
-  // =====================================
   saveAttendance: async (data) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/attendance`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
@@ -156,9 +114,6 @@ const API = {
     return res.json();
   },
 
-  // =====================================
-  // XABARNOMALAR VA SOZLAMALAR
-  // =====================================
   sendBroadcast: async (message) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/broadcast`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message })
