@@ -12,6 +12,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+  <!-- YANGI: Cropper.js (Rasmni qirqish uchun) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- FontAwesome (Ikonkalar uchun) -->
@@ -52,6 +56,12 @@
           <input type="text" id="login-username" required minlength="8" placeholder="Login (kamida 8 ta belgi)">
           <input type="password" id="login-password" required minlength="8" placeholder="Parol (kamida 8 ta belgi)">
           <button type="submit" class="primary-btn">Kirish</button>
+          
+          <!-- YANGI: Face ID / Barmoq izi tugmasi -->
+          <div class="divider">Yoki</div>
+          <button type="button" id="btn-faceid-login" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center; padding: 12px; font-size:16px;">
+            <i class="fa-solid fa-fingerprint" style="font-size:20px;"></i> Face ID bilan kirish
+          </button>
         </form>
       </div>
     </section>
@@ -107,18 +117,14 @@
           <i class="fa-solid fa-chart-pie"></i>
           <h3>Davomat Monitoringi</h3>
         </div>
-        
-        <!-- YANGI: O'quvchini qidirish -->
         <div class="menu-card" onclick="app.showScreen('screen-admin-search')">
           <i class="fa-solid fa-magnifying-glass"></i>
           <h3>O'quvchi Qidirish</h3>
         </div>
-
         <div class="menu-card" onclick="app.openAdminSettings()">
           <i class="fa-solid fa-bullhorn"></i>
           <h3>E'lon va Sozlamalar</h3>
         </div>
-
         <div class="menu-card" onclick="app.showProfileEdit()">
           <i class="fa-solid fa-user-gear"></i>
           <h3>Profil (Tahrirlash)</h3>
@@ -126,7 +132,6 @@
       </div>
     </section>
 
-    <!-- YANGI EKRAN: O'quvchini qidirish -->
     <section id="screen-admin-search" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Qidirish</h2>
       <p class="subtitle">Ism yoki familiyasini yozing</p>
@@ -136,16 +141,13 @@
       <div id="admin-search-results" class="report-list"></div>
     </section>
 
-    <!-- YANGILANGAN: E'lon yuborish, Vaqtni sozlash va O'chirishlar -->
     <section id="screen-admin-settings" class="screen hidden slide-up">
       <h2 class="section-title">E'lonlar va Sozlamalar</h2>
-      
       <div class="divider">Barchaga E'lon Yuborish</div>
       <form id="form-broadcast" class="custom-form">
         <textarea id="broadcast-message" required placeholder="Xabar matnini kiriting..." rows="4" style="width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); background-color: var(--secondary-bg); color: var(--text-color); font-size: 15px; outline: none; resize: vertical;"></textarea>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Xabarni Yuborish</button>
       </form>
-
       <div class="divider" style="margin-top: 30px;">Davomat Eslatma Vaqti</div>
       <form id="form-settings" class="custom-form">
         <div class="form-group">
@@ -154,27 +156,19 @@
         </div>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-clock"></i> Vaqtni Saqlash</button>
       </form>
-
-      <!-- YANGI: Sinfni O'chirish -->
       <div class="divider" style="margin-top: 30px;">Sinfni O'chirish</div>
       <form id="form-delete-class" class="custom-form">
         <div class="form-group">
-          <select id="delete-class-select" required>
-            <option value="">Sinfni tanlang...</option>
-          </select>
+          <select id="delete-class-select" required><option value="">Sinfni tanlang...</option></select>
         </div>
-        <button type="submit" class="primary-btn" style="background: var(--danger);"><i class="fa-solid fa-trash"></i> Sinfni Butunlay O'chirish</button>
+        <button type="submit" class="primary-btn" style="background: var(--danger);"><i class="fa-solid fa-trash"></i> Sinfni O'chirish</button>
       </form>
-
-      <!-- YANGI: O'qituvchini O'chirish -->
       <div class="divider" style="margin-top: 30px;">O'qituvchini O'chirish</div>
       <form id="form-delete-teacher" class="custom-form">
         <div class="form-group">
-          <select id="delete-teacher-select" required>
-            <option value="">O'qituvchini tanlang...</option>
-          </select>
+          <select id="delete-teacher-select" required><option value="">O'qituvchini tanlang...</option></select>
         </div>
-        <button type="submit" class="primary-btn" style="background: var(--danger);"><i class="fa-solid fa-user-xmark"></i> O'qituvchini Tizimdan O'chirish</button>
+        <button type="submit" class="primary-btn" style="background: var(--danger);"><i class="fa-solid fa-user-xmark"></i> O'qituvchini O'chirish</button>
       </form>
     </section>
 
@@ -199,11 +193,9 @@
       <div class="form-group" style="margin-bottom: 20px;">
         <input type="date" id="monitoring-date" onchange="app.adminLoadMonitoring()">
       </div>
-      
       <div class="chart-container" style="position: relative; width:100%; height:250px; margin-bottom: 20px;">
         <canvas id="attendanceChart"></canvas>
       </div>
-
       <h3 id="monitoring-list-title" class="section-title" style="font-size: 16px; margin-top:20px; display: none;">Ro'yxat</h3>
       <div id="admin-monitoring-list" class="report-list"></div>
     </section>
@@ -211,36 +203,46 @@
     <!-- ============================================== -->
     <!-- 4. O'QITUVCHI BO'LIMI -->
     <!-- ============================================== -->
-    <section id="screen-teacher-menu" class="screen hidden fade-in">
-      <div class="teacher-profile-header">
-        <img id="menu-teacher-photo" src="" alt="Ustoz">
+    
+    <!-- YANGI: Bir nechta sinflarni tanlash ekrani -->
+    <section id="screen-t-select-class" class="screen hidden fade-in">
+      <div class="teacher-profile-header" style="margin-bottom: 20px;">
+        <img id="select-teacher-photo" src="" alt="Ustoz">
         <div>
-          <h2 id="menu-teacher-name">Ustoz Ismi</h2>
-          <p id="menu-teacher-class" class="badge">Sinf yo'q</p>
+          <h2 id="select-teacher-name">Ustoz Ismi</h2>
+          <p class="badge">Sinflaringiz</p>
         </div>
       </div>
       
-      <div class="menu-grid" style="margin-top: 20px;">
-        <div class="menu-card" id="btn-t-add-class" onclick="app.showScreen('screen-t-add-class')" style="display:none;">
-          <i class="fa-solid fa-plus-square"></i>
-          <h3>Yangi Sinf Yaratish</h3>
-        </div>
-        
-        <div class="menu-card" id="btn-t-my-class" onclick="app.openMyClassMenu()" style="display:none;">
-          <i class="fa-solid fa-users-rectangle"></i>
-          <h3>Sinflarim</h3>
-        </div>
-        
-        <div class="menu-card" onclick="app.showProfileEdit()">
-          <i class="fa-solid fa-user-gear"></i>
-          <h3>Profilni Tahrirlash</h3>
-        </div>
+      <h2 class="section-title">Sinfni tanlang</h2>
+      <p class="subtitle">Qaysi sinf bilan ishlamoqchisiz?</p>
+      
+      <div id="t-class-selection-list" class="menu-grid">
+        <!-- JS orqali sinflar shu yerga tushadi -->
+      </div>
+      
+      <div style="margin-top:25px;">
+        <button class="secondary-btn" onclick="app.showScreen('screen-t-add-class')" style="display:flex; justify-content:center; gap:8px;">
+          <i class="fa-solid fa-plus"></i> Yangi sinf qo'shish
+        </button>
+      </div>
+      <div style="margin-top:15px;">
+        <button class="secondary-btn" onclick="app.showProfileEdit()" style="display:flex; justify-content:center; gap:8px; border-color:var(--hint-color); color:var(--hint-color);">
+          <i class="fa-solid fa-user-gear"></i> Profil sozlamalari
+        </button>
       </div>
     </section>
 
+    <!-- Tanlangan sinfning asosiy menyusi -->
     <section id="screen-teacher-my-class" class="screen hidden slide-up">
-      <h2 class="section-title" id="my-class-title-text">Mening Sinfim</h2>
-      <div class="menu-grid" style="margin-top: 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 class="section-title" id="my-class-title-text" style="margin:0;">Mening Sinfim</h2>
+        <button class="icon-action-btn edit" onclick="app.showScreen('screen-t-select-class')">
+          <i class="fa-solid fa-right-left"></i>
+        </button>
+      </div>
+      
+      <div class="menu-grid">
         <div class="menu-card" onclick="app.showScreen('screen-t-add-student')">
           <i class="fa-solid fa-user-plus"></i>
           <h3>O'quvchi Qo'shish</h3>
@@ -261,7 +263,7 @@
     </section>
 
     <section id="screen-t-add-class" class="screen hidden slide-up">
-      <h2 class="section-title">O'z Sinfingizni Yarating</h2>
+      <h2 class="section-title">Yangi Sinf Yaratish</h2>
       <form id="form-t-add-class" class="custom-form">
         <input type="text" id="t-class-name" required placeholder="Sinf nomi (masalan: 10-A)">
         <button type="submit" class="primary-btn">Sinfni Yaratish</button>
@@ -281,7 +283,6 @@
       <div id="t-students-list" class="report-list"></div>
     </section>
 
-    <!-- YANGILANGAN: O'quvchi Qo'shish (Rasm ixtiyoriy, Ko'p raqamlar, 5 ta sertifikat) -->
     <section id="screen-t-add-student" class="screen hidden slide-up">
       <h2 class="section-title">Yangi O'quvchi Qo'shish</h2>
       
@@ -293,8 +294,10 @@
       <form id="form-t-add-student-manual" class="custom-form">
         <div class="photo-upload-container">
           <img id="t-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
-          <input type="file" id="t-student-photo" accept="image/*">
-          <label for="t-student-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera (Ixtiyoriy)</label>
+          <!-- Rasm yuklash Crop modal orqali ishlaydi, shuning uchun file input id sini o'zgartiramiz -->
+          <input type="file" id="t-student-photo-input" accept="image/*">
+          <input type="hidden" id="t-student-photo-cropped">
+          <label for="t-student-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera (Ixtiyoriy)</label>
         </div>
         <input type="text" id="t-st-name" required placeholder="To'liq ism (F.I.SH)">
         <input type="text" id="t-st-perm" required placeholder="Doimiy yashash manzili">
@@ -320,15 +323,15 @@
       </form>
     </section>
 
-    <!-- (TEACHER) O'quvchini tahrirlash -->
     <section id="screen-t-edit-student" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Tahrirlash</h2>
       <form id="form-t-edit-student" class="custom-form">
         <input type="hidden" id="edit-st-id">
         <div class="photo-upload-container">
           <img id="edit-st-preview-photo" src="" alt="">
-          <input type="file" id="edit-st-photo" accept="image/*">
-          <label for="edit-st-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Yangi rasm (Ixtiyoriy)</label>
+          <input type="file" id="edit-st-photo-input" accept="image/*">
+          <input type="hidden" id="edit-st-photo-cropped">
+          <label for="edit-st-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Yangi rasm (Ixtiyoriy)</label>
         </div>
         <input type="text" id="edit-st-name" required placeholder="To'liq ism (F.I.SH)">
         <input type="text" id="edit-st-perm" required placeholder="Doimiy yashash manzili">
@@ -347,7 +350,6 @@
       </form>
     </section>
 
-    <!-- (TEACHER) Davomat Qilish -->
     <section id="screen-attendance" class="screen hidden slide-up">
       <h2 class="section-title" id="att-class-title">Davomat</h2>
       <form id="form-attendance">
@@ -366,8 +368,9 @@
       <form id="form-edit-profile" class="custom-form">
         <div id="edit-photo-box" class="photo-upload-container hidden">
           <img id="edit-preview-photo" src="" alt="">
-          <input type="file" id="edit-photo" accept="image/*">
-          <label for="edit-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera</label>
+          <input type="file" id="edit-photo-input" accept="image/*">
+          <input type="hidden" id="edit-photo-cropped">
+          <label for="edit-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm / Kamera</label>
         </div>
         <input type="text" id="edit-fullname" required placeholder="F.I.SH">
         <div class="form-group hidden"><input type="text" id="edit-address" placeholder="Manzil"></div>
@@ -375,34 +378,48 @@
         
         <div class="divider">Akkauntni o'zgartirish</div>
         <input type="text" id="edit-username" required minlength="8" placeholder="Login (min 8)">
-        <input type="text" id="edit-password" required minlength="8" placeholder="Parol (min 8)">
+        <input type="password" id="edit-password" required minlength="8" placeholder="Parol (min 8)">
         <button type="submit" class="primary-btn">Ma'lumotlarni Yangilash</button>
+
+        <!-- YANGI: Face ID Ulash tugmasi -->
+        <div class="divider" style="margin-top:20px;">Xavfsizlik</div>
+        <button type="button" id="btn-register-faceid" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center;">
+          <i class="fa-solid fa-fingerprint"></i> Face ID ulash / Yangilash
+        </button>
       </form>
     </section>
 
     <!-- ============================================== -->
-    <!-- 6. MODALLAR (O'quvchi to'liq ma'lumot va Daftarcha) -->
+    <!-- 6. MODALLAR (O'quvchi ma'lumoti, Daftarcha, Crop) -->
     <!-- ============================================== -->
     
-    <!-- O'quvchi shaxsiy kartasi modali -->
     <div id="details-modal" class="modal-overlay hidden">
       <div class="modal-content">
-        <button class="close-modal" onclick="app.closeModal()">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <button class="close-modal" onclick="app.closeModal()"><i class="fa-solid fa-xmark"></i></button>
         <div id="modal-body"></div>
       </div>
     </div>
 
-    <!-- YANGI: Davomat Daftarchasi modali -->
     <div id="diary-modal" class="modal-overlay hidden">
       <div class="modal-content">
-        <button class="close-modal" onclick="app.closeDiaryModal()">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <button class="close-modal" onclick="app.closeDiaryModal()"><i class="fa-solid fa-xmark"></i></button>
         <h3 style="text-align:center; margin-bottom:15px;" id="diary-student-name">Davomat Daftarchasi</h3>
         <p class="subtitle" style="text-align: center; margin-bottom: 15px;">Dars qoldirish va kechikishlar tarixi</p>
         <div id="diary-records-list" class="report-list"></div>
+      </div>
+    </div>
+
+    <!-- YANGI: Rasmni Qirqish (Crop) Modali -->
+    <div id="crop-modal" class="modal-overlay hidden" style="z-index: 1050;">
+      <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+        <h3 style="text-align:center; margin-bottom:15px;">Rasmni qirqish</h3>
+        <div style="width: 100%; height: 300px; background: #222; overflow: hidden; margin-bottom: 20px; border-radius: 12px; display:flex; justify-content:center; align-items:center;">
+          <img id="image-to-crop" src="" style="max-width: 100%; max-height: 100%;">
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="secondary-btn" style="flex: 1; border-color: var(--danger); color: var(--danger);" onclick="app.closeCropModal()">Bekor qilish</button>
+          <button class="primary-btn" style="flex: 1; margin-top: 0;" onclick="app.applyCrop()"><i class="fa-solid fa-crop-simple"></i> Saqlash</button>
+        </div>
       </div>
     </div>
 
