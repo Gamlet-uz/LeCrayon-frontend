@@ -47,7 +47,7 @@
           
           <div class="divider">Yoki</div>
           <button type="button" id="btn-faceid-login" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center; padding: 12px; font-size:16px;">
-            <i class="fa-solid fa-user-check" style="font-size:20px;"></i> Face ID bilan kirish
+            <i class="fa-solid fa-fingerprint" style="font-size:20px;"></i> Barmoq izi bilan kirish
           </button>
         </form>
       </div>
@@ -68,7 +68,6 @@
       <form id="form-setup-teacher" class="custom-form">
         <div class="photo-upload-container">
           <img id="teacher-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
-          <!-- capture="user" olib tashlandi -->
           <input type="file" id="teacher-photo" accept="image/*">
           <label for="teacher-photo" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish (Ixtiyoriy)</label>
         </div>
@@ -97,6 +96,7 @@
     <section id="screen-admin-search" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Qidirish</h2>
       <div class="form-group" style="margin-bottom: 20px;">
+        <!-- Kiritilgan matn JS orqali avtomatik lotinchaga o'tkaziladi -->
         <input type="text" id="admin-search-input" placeholder="Ism yoki familiya yozing..." oninput="app.searchStudents(this.value)">
       </div>
       <div id="admin-search-results" class="report-list"></div>
@@ -104,11 +104,30 @@
 
     <section id="screen-admin-settings" class="screen hidden slide-up">
       <h2 class="section-title">E'lonlar va Sozlamalar</h2>
+      
+      <!-- BARCHAGA E'LON YUBORISH -->
       <div class="divider">Barchaga E'lon Yuborish</div>
       <form id="form-broadcast" class="custom-form">
         <textarea id="broadcast-message" required placeholder="Xabar matnini kiriting..." rows="4" style="width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); background-color: var(--secondary-bg); color: var(--text-color); font-size: 15px; outline: none; resize: vertical;"></textarea>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Xabarni Yuborish</button>
       </form>
+
+      <!-- O'QUVCHILARNI OMMAVIY YUKLASH (YANGI QO'SHILDI) -->
+      <div class="divider" style="margin-top: 30px;">Umumiy O'quvchilar Bazasini Yuklash</div>
+      <div style="margin-bottom: 15px; text-align: center;">
+        <a href="/templates/shablon.xlsx" download class="secondary-btn" style="display:inline-block; text-decoration:none; width: auto; padding: 8px 15px; font-size: 14px;">
+          <i class="fa-solid fa-download"></i> Namuna (Shablon) Excel faylini yuklab olish
+        </a>
+        <p style="font-size: 12px; color: var(--hint-color); margin-top: 8px;">
+          Faylda tug'ilgan sana va "Sinf" ustuni bo'lishi shart. O'qituvchilar ushbu sinflarni avvaldan yaratgan bo'lishlari kerak.
+        </p>
+      </div>
+      <form id="form-admin-bulk-students" class="custom-form">
+        <input type="file" id="admin-excel-file" accept=".xlsx, .xls" required style="padding: 10px; background: white;">
+        <button type="submit" class="primary-btn"><i class="fa-solid fa-file-excel"></i> Excel orqali Barcha O'quvchilarni Yuklash</button>
+      </form>
+
+      <!-- DAVOMAT ESLATMASI -->
       <div class="divider" style="margin-top: 30px;">Davomat Eslatma Vaqti</div>
       <form id="form-settings" class="custom-form">
         <div class="form-group">
@@ -117,6 +136,8 @@
         </div>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-clock"></i> Vaqtni Saqlash</button>
       </form>
+
+      <!-- O'CHIRISH BO'LIMLARI -->
       <div class="divider" style="margin-top: 30px;">Sinfni O'chirish</div>
       <form id="form-delete-class" class="custom-form">
         <div class="form-group"><select id="delete-class-select" required><option value="">Sinfni tanlang...</option></select></div>
@@ -215,17 +236,21 @@
       <form id="form-t-add-student-manual" class="custom-form">
         <div class="photo-upload-container">
           <img id="t-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
-          <!-- capture="environment" olib tashlandi -->
           <input type="file" id="t-student-photo-input" accept="image/*">
           <label for="t-student-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish (Ixtiyoriy)</label>
         </div>
         <input type="text" id="t-st-name" required placeholder="To'liq ism (F.I.SH)">
+        
+        <!-- YUKLASH TUG'ILGAN SANA -->
+        <input type="text" id="t-st-birth" placeholder="Tug'ilgan sana (masalan: 12.05.2010)">
+        
         <input type="text" id="t-st-perm" required placeholder="Doimiy yashash manzili">
         <input type="text" id="t-st-dorm" placeholder="Yotoqxona manzili (agar bo'lsa)">
         <input type="text" inputmode="tel" id="t-st-parent" required placeholder="Ota-ona telefon raqamlari (vergul bilan)">
         <input type="text" inputmode="tel" id="t-st-dormphone" placeholder="Yotoqxona telefon raqamlari (vergul bilan)">
         <div class="certificates-section">
-          <h3>Sertifikatlar (Maksimal 5 ta)</h3>
+          <!-- SERTIFIKATLAR SONI 10 Taga o'zgartirildi -->
+          <h3>Sertifikatlar (Maksimal 10 ta)</h3>
           <div id="t-certs-container"></div>
           <button type="button" class="secondary-btn" onclick="app.addCertificateField('t-certs-container')"><i class="fa-solid fa-plus"></i> Sertifikat Qo'shish</button>
         </div>
@@ -244,16 +269,17 @@
         <input type="hidden" id="edit-st-id">
         <div class="photo-upload-container">
           <img id="edit-st-preview-photo" src="" alt="">
-          <!-- capture="environment" olib tashlandi -->
           <input type="file" id="edit-st-photo-input" accept="image/*">
           <label for="edit-st-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Yangi rasm yuklash/olish</label>
         </div>
         <input type="text" id="edit-st-name" required placeholder="To'liq ism (F.I.SH)">
+        <input type="text" id="edit-st-birth" placeholder="Tug'ilgan sana (masalan: 12.05.2010)">
         <input type="text" id="edit-st-perm" required placeholder="Doimiy yashash manzili">
         <input type="text" id="edit-st-dorm" placeholder="Yotoqxona manzili (agar bo'lsa)">
         <input type="text" inputmode="tel" id="edit-st-parent" required placeholder="Ota-ona telefon raqamlari">
         <input type="text" inputmode="tel" id="edit-st-dormphone" placeholder="Yotoqxona telefon raqamlari">
         <div class="certificates-section">
+          <h3>Sertifikatlar (Maksimal 10 ta)</h3>
           <div id="edit-st-certs-container"></div>
           <button type="button" class="secondary-btn" onclick="app.addCertificateField('edit-st-certs-container')"><i class="fa-solid fa-plus"></i> Sertifikat Qo'shish</button>
         </div>
@@ -262,10 +288,17 @@
     </section>
 
     <section id="screen-attendance" class="screen hidden slide-up">
-      <h2 class="section-title" id="att-class-title">Davomat</h2>
+      <!-- DAVOMAT TAHRIRLASH REJIMI UCHUN SARLAVHA YANILANDI -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h2 class="section-title" id="att-class-title" style="margin:0;">Davomat</h2>
+        <span id="attendance-status-badge" class="badge" style="display: none; background-color: var(--warning); margin:0;">
+          <i class="fa-solid fa-pen"></i> Tahrirlash
+        </span>
+      </div>
+      
       <form id="form-attendance">
         <div id="attendance-list" class="attendance-list"></div>
-        <button type="button" class="primary-btn submit-btn" onclick="app.submitAttendance()" style="width: 100%;">Davomatni Saqlash</button>
+        <button type="button" id="btn-submit-attendance" class="primary-btn submit-btn" onclick="app.submitAttendance()" style="width: 100%;">Davomatni Saqlash</button>
       </form>
     </section>
 
@@ -275,7 +308,6 @@
       <form id="form-edit-profile" class="custom-form">
         <div id="edit-photo-box" class="photo-upload-container hidden">
           <img id="edit-preview-photo" src="" alt="">
-          <!-- capture="user" olib tashlandi -->
           <input type="file" id="edit-photo-input" accept="image/*">
           <label for="edit-photo-input" class="upload-btn"><i class="fa-solid fa-camera"></i> Rasm yuklash/olish</label>
         </div>
@@ -288,8 +320,9 @@
         <button type="submit" class="primary-btn">Ma'lumotlarni Yangilash</button>
 
         <div class="divider" style="margin-top:20px;">Xavfsizlik</div>
+        <!-- FACE ID DAN BARMOQ IZIGA O'ZGARDI -->
         <button type="button" id="btn-register-faceid" class="secondary-btn" style="display:flex; justify-content:center; gap:10px; align-items:center;">
-          <i class="fa-solid fa-user-check"></i> Face ID ulash / Yangilash
+          <i class="fa-solid fa-fingerprint"></i> Barmoq izi ulash / Yangilash
         </button>
       </form>
     </section>
