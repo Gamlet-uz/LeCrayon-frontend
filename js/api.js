@@ -76,6 +76,15 @@ const API = {
     });
     return res.json();
   },
+
+  // YANGI: Admin orqali maktab bo'yicha barcha o'quvchilarni ommaviy yuklash API si
+  adminGlobalBulkCreateStudents: async (students) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/students/bulk-global`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ students })
+    });
+    return res.json();
+  },
+
   getStudentsByClass: async (classId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
     return res.json();
@@ -101,6 +110,13 @@ const API = {
     });
     return res.json();
   },
+  
+  // YANGI: Tahrirlash uchun bugungi yuborilgan davomatni olib kelish API si
+  getClassAttendanceToday: async (classId, date) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/attendance/class/${classId}?date=${date}`);
+    return res.json();
+  },
+
   getMonitoring: async (date) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/attendance?date=${date}`);
     return res.json();
