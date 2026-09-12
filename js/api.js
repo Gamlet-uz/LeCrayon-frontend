@@ -27,11 +27,8 @@ const API = {
     });
     return res.json();
   },
-  // YANGI: O'qituvchini o'chirish
   deleteTeacher: async (id) => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/users/${id}`, {
-      method: 'DELETE'
-    });
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/users/${id}`, { method: 'DELETE' });
     return res.json();
   },
   uploadImage: async (imageFile) => {
@@ -46,31 +43,60 @@ const API = {
   },
 
   // =====================================
-  // SINFLAR
+  // YANGI: FACE ID VA WEBAUTHN API'LARI
+  // =====================================
+  registerFaceIdGenerate: async (username) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/register/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
+    });
+    return res.json();
+  },
+  registerFaceIdVerify: async (username, attResp) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/register/verify`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, attResp })
+    });
+    return res.json();
+  },
+  loginFaceIdGenerate: async () => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/login/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }
+    });
+    return res.json();
+  },
+  loginFaceIdVerify: async (authResp, sessionId, telegramId = null) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/webauthn/login/verify`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authResp, sessionId, telegramId })
+    });
+    return res.json();
+  },
+
+  // =====================================
+  // SINFLAR VA KO'P SINFLI O'QITUVCHI
   // =====================================
   createClass: async (className, teacherId) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ className, teacherId })
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ className, teacherId })
     });
     return res.json();
   },
-  editClass: async (classId, className, teacherId) => {
+  editClass: async (classId, className) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes/${classId}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ className, teacherId })
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ className })
     });
     return res.json();
   },
-  // YANGI: Sinfni butunlay o'chirish
   deleteClass: async (classId) => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes/${classId}`, {
-      method: 'DELETE'
-    });
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/classes/${classId}`, { method: 'DELETE' });
     return res.json();
   },
   getClassesStats: async (date) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/classes-stats?date=${date}`);
+    return res.json();
+  },
+  // YANGI: O'qituvchining BARCHA sinflarini olib kelish
+  getTeacherClasses: async (teacherId) => {
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/teacher/classes/${teacherId}`);
     return res.json();
   },
 
@@ -85,8 +111,7 @@ const API = {
   },
   bulkCreateStudents: async (students, classId, className) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/bulk`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ students, classId, className })
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ students, classId, className })
     });
     return res.json();
   },
@@ -94,7 +119,6 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${classId}`);
     return res.json();
   },
-  // YANGI: O'quvchini ismi bo'yicha qidirish
   searchStudents: async (query) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/search-students?q=${encodeURIComponent(query)}`);
     return res.json();
@@ -106,9 +130,7 @@ const API = {
     return res.json();
   },
   deleteStudent: async (id) => {
-    const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}`, {
-      method: 'DELETE'
-    });
+    const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}`, { method: 'DELETE' });
     return res.json();
   },
 
@@ -125,7 +147,6 @@ const API = {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/admin/attendance?date=${date}`);
     return res.json();
   },
-  // YANGI: O'quvchining davomat daftarchasi (tarixi)
   getStudentAttendance: async (id) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/students/${id}/attendance`);
     return res.json();
@@ -140,8 +161,7 @@ const API = {
   // =====================================
   sendBroadcast: async (message) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/broadcast`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message })
     });
     return res.json();
   },
@@ -151,8 +171,7 @@ const API = {
   },
   saveSettings: async (time) => {
     const res = await fetch(`${CONFIG.BACKEND_URL}/api/settings`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ time })
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time })
     });
     return res.json();
   }
