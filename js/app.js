@@ -429,7 +429,6 @@ const app = {
           dormitory_phone: document.getElementById('t-st-dormphone').value,
           certificates: app.gatherCertificates('t-certs-container')
         };
-        // Endi dublikat serverda tekshiriladi
         const res = await API.createStudent(data);
         app.toggleLoader(false);
         
@@ -552,12 +551,15 @@ const app = {
         c.innerHTML = '';
         if(res.data.length === 0) return c.innerHTML = "<p style='text-align:center;'>Ushbu guruhda o'quvchilar mavjud emas.</p>"; 
 
-        res.data.forEach(st => {
+        // TARTIBLASH VA RAQAMLASH
+        res.data.sort((a,b) => a.full_name.localeCompare(b.full_name));
+
+        res.data.forEach((st, index) => {
           c.innerHTML += `
             <div class="student-card" onclick="app.showStudentDetails('${st.id}', 'teacher')">
               <img src="${st.photo_url}" alt="">
               <div class="info">
-                <h4>${st.full_name}</h4>
+                <h4>${index + 1}. ${st.full_name}</h4>
                 <p><i class="fa-solid fa-phone"></i> Tel: ${String(st.parent_phone).split(',')[0]}</p>
               </div>
               <div class="student-actions">
@@ -612,7 +614,6 @@ const app = {
     try {
       app.toggleLoader(true);
       const res = await API.getStudentsByClass(app.activeClassId);
-      
       const today = app.getLocalDate();
       const attRes = await API.getClassAttendanceToday(app.activeClassId, today); 
       app.toggleLoader(false);
@@ -643,7 +644,10 @@ const app = {
 
           const disabledAttr = isSubmitted ? 'disabled="true"' : '';
 
-          res.data.forEach(st => {
+          // TARTIBLASH VA RAQAMLASH
+          res.data.sort((a,b) => a.full_name.localeCompare(b.full_name));
+
+          res.data.forEach((st, index) => {
             let status = 'keldi';
             let comment = '';
             
@@ -659,7 +663,7 @@ const app = {
               <div class="attendance-item ${status !== 'keldi' ? 'show-comment' : ''}" id="att-box-${st.id}">
                 <div class="student-info-row">
                   <img src="${st.photo_url}" alt="">
-                  <span>${st.full_name}</span>
+                  <span>${index + 1}. ${st.full_name}</span>
                 </div>
                 <div class="radio-group">
                   <label class="radio-btn keldi">
@@ -764,25 +768,61 @@ const app = {
     try {
       app.toggleLoader(true); 
       const res = await API.getStudentsByClass(classId); 
+      
+      // ADMIN: Davomat natijasiga qarab maxsus tartiblash uchun monitoring ma'lumoti
+      const mon = await API.getMonitoring(app.getLocalDate());
       app.toggleLoader(false);
       
       if(res.success) {
         app.currentAdminClassView = res.data; 
         document.getElementById('admin-class-title').innerText = `${className} O'quvchilari`;
         
-        const mon = await API.getMonitoring(app.getLocalDate());
-        const absentIds = mon.success ? mon.data.map(m => m.id) : [];
+        // 1. Holatlarni xaritalash
+        const statusMap = {};
+        if (mon.success) {
+           mon.data.forEach(m => {
+               statusMap[m.id] = m.status; 
+           });
+        }
+
+        // 2. TARTIBLASH: 1-sababsiz, 2-kech, 3-sababli, 4-kelganlar
+        const sortWeight = { 'sababsiz': 1, 'kech_keldi': 2, 'sababli': 3, 'keldi': 4 };
+        res.data.sort((a, b) => {
+            const statusA = statusMap[a.id] || 'keldi';
+            const statusB = statusMap[b.id] || 'keldi';
+            if (sortWeight[statusA] !== sortWeight[statusB]) {
+                return sortWeight[statusA] - sortWeight[statusB];
+            }
+            return a.full_name.localeCompare(b.full_name); // Agar holati bir xil bo'lsa, ism bo'yicha
+        });
 
         const c = document.getElementById('admin-class-students'); 
         c.innerHTML = '';
-        res.data.forEach(st => {
-          const isAbsent = absentIds.includes(st.id);
+        
+        res.data.forEach((st, index) => {
+          const status = statusMap[st.id] || 'keldi';
+          let borderStyle = '';
+          let statusBadge = '';
+
+          // 3. RANG VA BADGELAR
+          if (status === 'sababsiz') {
+              borderStyle = 'border: 2px solid var(--danger);'; // Qizil
+              statusBadge = `<span class="badge" style="background:var(--danger); color:white; font-size:11px;">SABABSIZ</span>`;
+          } else if (status === 'kech_keldi') {
+              borderStyle = 'border: 2px solid var(--warning);'; // Sariq
+              statusBadge = `<span class="badge" style="background:var(--warning); color:white; font-size:11px;">KECH QOLGAN</span>`;
+          } else if (status === 'sababli') {
+              borderStyle = 'border: 2px solid #34c759;'; // Yashil
+              statusBadge = `<span class="badge" style="background:#34c759; color:white; font-size:11px;">SABABLI</span>`;
+          }
+
           c.innerHTML += `
-            <div class="student-card ${isAbsent ? 'absent-border' : ''}" style="cursor:pointer;" onclick="app.showStudentDetails('${st.id}', 'admin')">
+            <div class="student-card" style="cursor:pointer; ${borderStyle}" onclick="app.showStudentDetails('${st.id}', 'admin')">
               <img src="${st.photo_url}" alt="">
               <div class="info">
-                <h4>${st.full_name}</h4>
+                <h4>${index + 1}. ${st.full_name}</h4>
                 <p><i class="fa-solid fa-phone"></i> Tel: ${String(st.parent_phone).split(',')[0]}</p>
+                ${statusBadge ? `<div style="margin-top:5px;">${statusBadge}</div>` : ''}
               </div>
             </div>`;
         });
@@ -863,13 +903,17 @@ const app = {
     if(filtered.length === 0) return title.innerText = `Ushbu toifada o'quvchilar yo'q.`;
     
     title.innerText = `${status.toUpperCase()} o'quvchilar ro'yxati:`;
-    filtered.forEach(st => {
+    
+    // TARTIBLASH VA RAQAMLASH
+    filtered.sort((a,b) => a.full_name.localeCompare(b.full_name));
+
+    filtered.forEach((st, index) => {
       let bClass = status === 'sababli' ? 'warning' : (status === 'kech_keldi' ? 'blue' : 'red');
       c.innerHTML += `
         <div class="student-card absent-border" style="${status==='kech_keldi'?'border-color:var(--info);background:rgba(0,122,255,0.05);':''}">
           <img src="${st.photo_url || 'https://via.placeholder.com/60'}" alt="">
           <div class="info">
-            <h4>${st.full_name} (${st.class_name})</h4>
+            <h4>${index + 1}. ${st.full_name} (${st.class_name})</h4>
             <p><i class="fa-solid fa-phone"></i> Tel: ${String(st.parent_phone).split(',')[0]}</p>
             <p><span class="badge ${bClass}">${st.status.toUpperCase()}</span> ${st.comment ? '- ' + st.comment : ''}</p>
           </div>
@@ -892,11 +936,11 @@ const app = {
           const c = document.getElementById('admin-search-results'); c.innerHTML = '';
           
           if(res.data.length === 0) c.innerHTML = '<p style="text-align:center;">Topilmadi.</p>';
-          else res.data.forEach(st => { 
+          else res.data.forEach((st, index) => { 
               c.innerHTML += `
                 <div class="student-card" style="cursor:pointer;" onclick="app.showStudentDetails('${st.id}', 'search')">
                   <img src="${st.photo_url}" alt="">
-                  <div class="info"><h4>${st.full_name}</h4><p>Guruh: ${st.class_name}</p></div>
+                  <div class="info"><h4>${index + 1}. ${st.full_name}</h4><p>Guruh: ${st.class_name}</p></div>
                 </div>`; 
             });
         }
@@ -1033,7 +1077,6 @@ const app = {
     return certs;
   },
 
-  // YANGILANDI: Modal oynasi osongina ochilishi uchun soddalashtirildi
   openDiaryModal: async (stId) => {
     try {
       const stName = document.querySelector('#modal-body h3').innerText;
