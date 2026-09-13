@@ -108,6 +108,7 @@
         <textarea id="broadcast-message" required placeholder="Xabar matnini kiriting..." rows="4" style="width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); background-color: var(--secondary-bg); color: var(--text-color); font-size: 15px; outline: none; resize: vertical;"></textarea>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Xabarni Yuborish</button>
       </form>
+
       <div class="divider" style="margin-top: 30px;">Davomat Eslatma Vaqti</div>
       <form id="form-settings" class="custom-form">
         <div class="form-group">
@@ -116,11 +117,13 @@
         </div>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-clock"></i> Vaqtni Saqlash</button>
       </form>
+
       <div class="divider" style="margin-top: 30px;">Guruhni O'chirish</div>
       <form id="form-delete-class" class="custom-form">
         <div class="form-group"><select id="delete-class-select" required><option value="">Guruhni tanlang...</option></select></div>
         <button type="submit" class="primary-btn" style="background: var(--danger);"><i class="fa-solid fa-trash"></i> Guruhni O'chirish</button>
       </form>
+      
       <div class="divider" style="margin-top: 30px;">O'qituvchini O'chirish</div>
       <form id="form-delete-teacher" class="custom-form">
         <div class="form-group"><select id="delete-teacher-select" required><option value="">O'qituvchini tanlang...</option></select></div>
@@ -262,7 +265,7 @@
       </form>
     </section>
 
-    <!-- DAVOMAT OYNASI (TAHRIRLASH TUGMASI BILAN) -->
+    <!-- DAVOMAT OYNASI (TAHRIRLASH VA SAQLASH) -->
     <section id="screen-attendance" class="screen hidden slide-up">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h2 class="section-title" id="att-class-title" style="margin:0;">Davomat</h2>
