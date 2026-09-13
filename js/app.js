@@ -147,6 +147,32 @@ const app = {
     return text.split('').map(char => map[char] || char).join('');
   },
 
+  // YANGI: Exceldan o'qilgan sanani matnga (KK.OO.YYYY) o'girish
+  formatExcelDate: (excelDate) => {
+    if (!excelDate) return '';
+    if (typeof excelDate === 'number') {
+      const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
+      const localOffset = date.getTimezoneOffset() * 60000;
+      const finalDate = new Date(date.getTime() + localOffset);
+      const dd = String(finalDate.getDate()).padStart(2, '0');
+      const mm = String(finalDate.getMonth() + 1).padStart(2, '0');
+      const yyyy = finalDate.getFullYear();
+      return `${dd}.${mm}.${yyyy}`;
+    }
+    return String(excelDate).trim();
+  },
+
+  // YANGI: Exceldan o'qilgan telefonni 9.98E+11 o'rniga oddiy matnga o'girish
+  formatExcelPhone: (phoneData) => {
+    if (!phoneData) return '';
+    if (typeof phoneData === 'number') {
+      let numStr = phoneData.toLocaleString('fullwide', {useGrouping:false});
+      if (numStr.startsWith('998')) return '+' + numStr;
+      return numStr;
+    }
+    return String(phoneData).trim();
+  },
+
   setupAuthListeners: () => {
     const telegramId = tg.initDataUnsafe?.user?.id || null;
 
@@ -432,8 +458,8 @@ const app = {
           const workbook = XLSX.read(data, {type: 'array'});
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           
-          // MUHIM: raw: false bo'lsa sanalar raqamga aylanib ketmaydi
-          const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1, raw: false, defval: ''}); 
+          // MUHIM XUSUSIYAT: raw: true holatida sanalar va telefon raqamlarni olamiz
+          const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1, raw: true, defval: ''}); 
           
           let studentsList = [];
           let duplicateCount = 0;
@@ -459,13 +485,13 @@ const app = {
 
             studentsList.push({
               full_name: fullName,
-              birth_date: String(r[1] || ''),
+              birth_date: app.formatExcelDate(r[1]), // Sana moslandi
               school_class: String(r[2] || ''),
               group_name: groupName,
               permanent_address: String(r[4] || ''),
               dormitory_address: String(r[5] || ''),
-              parent_phone: String(r[6] || ''),
-              dormitory_phone: String(r[7] || ''),
+              parent_phone: app.formatExcelPhone(r[6]), // Telefon moslandi
+              dormitory_phone: app.formatExcelPhone(r[7]), // Telefon moslandi
               certificates: certs
             });
           }
@@ -726,9 +752,6 @@ const app = {
     } catch(err) { app.toggleLoader(false); tg.showAlert("Xatolik: " + err.message); }
   },
 
-  // =====================================
-  // ADMIN BO'LIMI VA STATISTIKA
-  // =====================================
   adminLoadClasses: async () => {
     try {
       app.toggleLoader(true); 
@@ -1046,7 +1069,7 @@ const app = {
           }); 
         }
         document.getElementById('diary-modal').classList.remove('hidden');
-      }
+      } else { tg.showAlert(res.error); }
     } catch(err) { app.toggleLoader(false); tg.showAlert(err.message); }
   },
 
