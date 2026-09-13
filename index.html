@@ -36,7 +36,6 @@
 
   <main id="app-content">
 
-    <!-- LOGIN -->
     <section id="screen-login" class="screen active fade-in">
       <div class="role-container">
         <h2>Tizimga kirish</h2>
@@ -54,7 +53,6 @@
       </div>
     </section>
 
-    <!-- ADMIN SETUP -->
     <section id="screen-setup-admin" class="screen hidden slide-up">
       <h2 class="section-title">Admin Profilini Yaratish</h2>
       <form id="form-setup-admin" class="custom-form">
@@ -65,7 +63,6 @@
       </form>
     </section>
 
-    <!-- USTOZ SETUP -->
     <section id="screen-setup-teacher" class="screen hidden slide-up">
       <h2 class="section-title">O'qituvchi Profilini Yaratish</h2>
       <form id="form-setup-teacher" class="custom-form">
@@ -84,7 +81,6 @@
       </form>
     </section>
 
-    <!-- ADMIN ASOSIY MENU -->
     <section id="screen-admin-menu" class="screen hidden fade-in">
       <h2 class="section-title">Admin Paneli</h2>
       <div class="menu-grid">
@@ -97,7 +93,6 @@
       </div>
     </section>
 
-    <!-- ADMIN QIDIRUV -->
     <section id="screen-admin-search" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Qidirish</h2>
       <div class="form-group" style="margin-bottom: 20px;">
@@ -106,18 +101,13 @@
       <div id="admin-search-results" class="report-list"></div>
     </section>
 
-    <!-- ADMIN SOZLAMALAR -->
     <section id="screen-admin-settings" class="screen hidden slide-up">
       <h2 class="section-title">E'lonlar va Sozlamalar</h2>
-      
-      <!-- BARCHAGA E'LON YUBORISH -->
       <div class="divider">Barchaga E'lon Yuborish</div>
       <form id="form-broadcast" class="custom-form">
         <textarea id="broadcast-message" required placeholder="Xabar matnini kiriting..." rows="4" style="width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); background-color: var(--secondary-bg); color: var(--text-color); font-size: 15px; outline: none; resize: vertical;"></textarea>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Xabarni Yuborish</button>
       </form>
-
-      <!-- DAVOMAT ESLATMASI -->
       <div class="divider" style="margin-top: 30px;">Davomat Eslatma Vaqti</div>
       <form id="form-settings" class="custom-form">
         <div class="form-group">
@@ -126,14 +116,11 @@
         </div>
         <button type="submit" class="primary-btn"><i class="fa-solid fa-clock"></i> Vaqtni Saqlash</button>
       </form>
-
-      <!-- O'CHIRISH BO'LIMLARI -->
       <div class="divider" style="margin-top: 30px;">Guruhni O'chirish</div>
       <form id="form-delete-class" class="custom-form">
         <div class="form-group"><select id="delete-class-select" required><option value="">Guruhni tanlang...</option></select></div>
         <button type="submit" class="primary-btn" style="background: var(--danger);"><i class="fa-solid fa-trash"></i> Guruhni O'chirish</button>
       </form>
-      
       <div class="divider" style="margin-top: 30px;">O'qituvchini O'chirish</div>
       <form id="form-delete-teacher" class="custom-form">
         <div class="form-group"><select id="delete-teacher-select" required><option value="">O'qituvchini tanlang...</option></select></div>
@@ -141,7 +128,6 @@
       </form>
     </section>
 
-    <!-- ADMIN GURUHLAR -->
     <section id="screen-admin-classes" class="screen hidden slide-up">
       <h2 class="section-title">Barcha Guruhlar Statistikasi</h2>
       <div id="admin-classes-list" class="report-list"></div>
@@ -152,13 +138,11 @@
       <div id="admin-class-students" class="report-list"></div>
     </section>
 
-    <!-- ADMIN O'QITUVCHILAR -->
     <section id="screen-admin-teachers" class="screen hidden slide-up">
       <h2 class="section-title">Maktab O'qituvchilari</h2>
       <div id="admin-teachers-list" class="report-list"></div>
     </section>
 
-    <!-- ADMIN MONITORING -->
     <section id="screen-admin-monitoring" class="screen hidden slide-up">
       <h2 class="section-title">Davomat Monitoringi</h2>
       <div class="form-group" style="margin-bottom: 20px;">
@@ -171,7 +155,6 @@
       <div id="admin-monitoring-list" class="report-list"></div>
     </section>
 
-    <!-- O'QITUVCHI BO'LIMI: GURUH TANLASH -->
     <section id="screen-t-select-class" class="screen hidden fade-in">
       <div class="teacher-profile-header" style="margin-bottom: 20px;">
         <img id="select-teacher-photo" src="" alt="Ustoz">
@@ -186,7 +169,6 @@
       <div style="margin-top:15px;"><button class="secondary-btn" onclick="app.showProfileEdit()"><i class="fa-solid fa-user-gear"></i> Profil sozlamalari</button></div>
     </section>
 
-    <!-- O'QITUVCHI BO'LIMI: MENING GURUHIM -->
     <section id="screen-teacher-my-class" class="screen hidden slide-up">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2 class="section-title" id="my-class-title-text" style="margin:0;">Mening Guruhim</h2>
@@ -200,7 +182,6 @@
       </div>
     </section>
 
-    <!-- O'QITUVCHI: YANGI GURUH QO'SHISH -->
     <section id="screen-t-add-class" class="screen hidden slide-up">
       <h2 class="section-title">Yangi Guruh Yaratish</h2>
       <form id="form-t-add-class" class="custom-form">
@@ -209,7 +190,6 @@
       </form>
     </section>
 
-    <!-- O'QITUVCHI: GURUHNI TAHRIRLASH -->
     <section id="screen-t-edit-class" class="screen hidden slide-up">
       <h2 class="section-title">Guruhni Tahrirlash</h2>
       <form id="form-t-edit-class" class="custom-form">
@@ -218,13 +198,11 @@
       </form>
     </section>
 
-    <!-- O'QITUVCHI: GURUH O'QUVCHILARI RO'YXATI -->
     <section id="screen-t-students" class="screen hidden slide-up">
       <h2 class="section-title">Guruh O'quvchilari</h2>
       <div id="t-students-list" class="report-list"></div>
     </section>
 
-    <!-- O'QITUVCHI: O'QUVCHI QO'SHISH -->
     <section id="screen-t-add-student" class="screen hidden slide-up">
       <h2 class="section-title">Yangi O'quvchi Qo'shish</h2>
       <div class="custom-tabs" style="display:flex; gap:10px; margin-bottom: 20px;">
@@ -232,7 +210,6 @@
         <button id="tab-excel" class="secondary-btn" style="flex:1;" onclick="app.switchStudentTab('excel')">Fayl yuklash (Excel)</button>
       </div>
 
-      <!-- Qo'lda kiritish -->
       <form id="form-t-add-student-manual" class="custom-form">
         <div class="photo-upload-container">
           <img id="t-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
@@ -254,14 +231,12 @@
         <button type="submit" class="primary-btn">O'quvchini Saqlash</button>
       </form>
 
-      <!-- Excel kiritish -->
       <form id="form-t-add-student-excel" class="custom-form hidden">
         <input type="file" id="excel-file" accept=".xlsx, .xls" required style="padding: 10px; background: white;">
         <button type="submit" class="primary-btn"><i class="fa-solid fa-file-excel"></i> Excel orqali Yuklash</button>
       </form>
     </section>
 
-    <!-- O'QITUVCHI: O'QUVCHINI TAHRIRLASH -->
     <section id="screen-t-edit-student" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Tahrirlash</h2>
       <form id="form-t-edit-student" class="custom-form">
@@ -287,22 +262,31 @@
       </form>
     </section>
 
-    <!-- DAVOMAT OYNASI -->
+    <!-- DAVOMAT OYNASI (TAHRIRLASH TUGMASI BILAN) -->
     <section id="screen-attendance" class="screen hidden slide-up">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h2 class="section-title" id="att-class-title" style="margin:0;">Davomat</h2>
-        <span id="attendance-status-badge" class="badge" style="display: none; background-color: var(--warning); margin:0;">
-          <i class="fa-solid fa-pen"></i> Tahrirlash
+        <!-- Saqlangan holat belgisi -->
+        <span id="attendance-status-badge" class="badge green" style="display: none; margin:0;">
+          <i class="fa-solid fa-check"></i> Saqlangan
         </span>
       </div>
       
       <form id="form-attendance">
         <div id="attendance-list" class="attendance-list"></div>
-        <button type="button" id="btn-submit-attendance" class="primary-btn submit-btn" onclick="app.submitAttendance()" style="width: 100%;">Davomatni Saqlash</button>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <!-- Tahrirlash tugmasi -->
+          <button type="button" id="btn-edit-attendance" class="secondary-btn hidden" onclick="app.enableAttendanceEdit()" style="flex:1; border-color:var(--primary-color); color:var(--primary-color);">
+            <i class="fa-solid fa-pen"></i> Tahrirlash
+          </button>
+          <!-- Saqlash tugmasi -->
+          <button type="button" id="btn-submit-attendance" class="primary-btn submit-btn" onclick="app.submitAttendance()" style="flex:1;">
+            Davomatni Saqlash
+          </button>
+        </div>
       </form>
     </section>
 
-    <!-- PROFIL TAHRIRLASH (XAVFSIZLIK BILAN) -->
     <section id="screen-profile" class="screen hidden slide-up">
       <h2 class="section-title">Profilni Tahrirlash</h2>
       <form id="form-edit-profile" class="custom-form">
@@ -319,7 +303,6 @@
         <input type="text" id="edit-username" required minlength="8" placeholder="Login (min 8)">
         <input type="password" id="edit-password" required minlength="8" placeholder="Parol (min 8)">
 
-        <!-- XAVFSIZLIK VA TELEGRAM ID -->
         <div class="divider" style="margin-top:20px;">Xavfsizlik va Qulflash</div>
         <div class="form-group">
           <label for="edit-telegram-id" style="font-size:13px; font-weight: 600; color:var(--danger);">Telegram ID raqamingiz (Majburiy emas):</label>
