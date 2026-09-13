@@ -36,6 +36,7 @@
 
   <main id="app-content">
 
+    <!-- LOGIN -->
     <section id="screen-login" class="screen active fade-in">
       <div class="role-container">
         <h2>Tizimga kirish</h2>
@@ -53,6 +54,7 @@
       </div>
     </section>
 
+    <!-- ADMIN SETUP -->
     <section id="screen-setup-admin" class="screen hidden slide-up">
       <h2 class="section-title">Admin Profilini Yaratish</h2>
       <form id="form-setup-admin" class="custom-form">
@@ -63,6 +65,7 @@
       </form>
     </section>
 
+    <!-- USTOZ SETUP -->
     <section id="screen-setup-teacher" class="screen hidden slide-up">
       <h2 class="section-title">O'qituvchi Profilini Yaratish</h2>
       <form id="form-setup-teacher" class="custom-form">
@@ -81,10 +84,10 @@
       </form>
     </section>
 
+    <!-- ADMIN ASOSIY MENU -->
     <section id="screen-admin-menu" class="screen hidden fade-in">
       <h2 class="section-title">Admin Paneli</h2>
       <div class="menu-grid">
-        <!-- Sinf yozuvi Guruhga o'zgartirildi -->
         <div class="menu-card" onclick="app.adminLoadClasses()"><i class="fa-solid fa-layer-group"></i><h3>Guruhlar</h3></div>
         <div class="menu-card" onclick="app.adminLoadTeachers()"><i class="fa-solid fa-chalkboard-user"></i><h3>O'qituvchilar</h3></div>
         <div class="menu-card" onclick="app.adminLoadMonitoring()"><i class="fa-solid fa-chart-pie"></i><h3>Davomat Monitoringi</h3></div>
@@ -94,6 +97,7 @@
       </div>
     </section>
 
+    <!-- ADMIN QIDIRUV -->
     <section id="screen-admin-search" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Qidirish</h2>
       <div class="form-group" style="margin-bottom: 20px;">
@@ -102,6 +106,7 @@
       <div id="admin-search-results" class="report-list"></div>
     </section>
 
+    <!-- ADMIN SOZLAMALAR -->
     <section id="screen-admin-settings" class="screen hidden slide-up">
       <h2 class="section-title">E'lonlar va Sozlamalar</h2>
       
@@ -136,6 +141,7 @@
       </form>
     </section>
 
+    <!-- ADMIN GURUHLAR -->
     <section id="screen-admin-classes" class="screen hidden slide-up">
       <h2 class="section-title">Barcha Guruhlar Statistikasi</h2>
       <div id="admin-classes-list" class="report-list"></div>
@@ -146,11 +152,13 @@
       <div id="admin-class-students" class="report-list"></div>
     </section>
 
+    <!-- ADMIN O'QITUVCHILAR -->
     <section id="screen-admin-teachers" class="screen hidden slide-up">
       <h2 class="section-title">Maktab O'qituvchilari</h2>
       <div id="admin-teachers-list" class="report-list"></div>
     </section>
 
+    <!-- ADMIN MONITORING -->
     <section id="screen-admin-monitoring" class="screen hidden slide-up">
       <h2 class="section-title">Davomat Monitoringi</h2>
       <div class="form-group" style="margin-bottom: 20px;">
@@ -163,7 +171,7 @@
       <div id="admin-monitoring-list" class="report-list"></div>
     </section>
 
-    <!-- O'QITUVCHI BO'LIMI -->
+    <!-- O'QITUVCHI BO'LIMI: GURUH TANLASH -->
     <section id="screen-t-select-class" class="screen hidden fade-in">
       <div class="teacher-profile-header" style="margin-bottom: 20px;">
         <img id="select-teacher-photo" src="" alt="Ustoz">
@@ -178,6 +186,7 @@
       <div style="margin-top:15px;"><button class="secondary-btn" onclick="app.showProfileEdit()"><i class="fa-solid fa-user-gear"></i> Profil sozlamalari</button></div>
     </section>
 
+    <!-- O'QITUVCHI BO'LIMI: MENING GURUHIM -->
     <section id="screen-teacher-my-class" class="screen hidden slide-up">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2 class="section-title" id="my-class-title-text" style="margin:0;">Mening Guruhim</h2>
@@ -191,6 +200,7 @@
       </div>
     </section>
 
+    <!-- O'QITUVCHI: YANGI GURUH QO'SHISH -->
     <section id="screen-t-add-class" class="screen hidden slide-up">
       <h2 class="section-title">Yangi Guruh Yaratish</h2>
       <form id="form-t-add-class" class="custom-form">
@@ -199,6 +209,7 @@
       </form>
     </section>
 
+    <!-- O'QITUVCHI: GURUHNI TAHRIRLASH -->
     <section id="screen-t-edit-class" class="screen hidden slide-up">
       <h2 class="section-title">Guruhni Tahrirlash</h2>
       <form id="form-t-edit-class" class="custom-form">
@@ -207,11 +218,13 @@
       </form>
     </section>
 
+    <!-- O'QITUVCHI: GURUH O'QUVCHILARI RO'YXATI -->
     <section id="screen-t-students" class="screen hidden slide-up">
       <h2 class="section-title">Guruh O'quvchilari</h2>
       <div id="t-students-list" class="report-list"></div>
     </section>
 
+    <!-- O'QITUVCHI: O'QUVCHI QO'SHISH -->
     <section id="screen-t-add-student" class="screen hidden slide-up">
       <h2 class="section-title">Yangi O'quvchi Qo'shish</h2>
       <div class="custom-tabs" style="display:flex; gap:10px; margin-bottom: 20px;">
@@ -219,6 +232,7 @@
         <button id="tab-excel" class="secondary-btn" style="flex:1;" onclick="app.switchStudentTab('excel')">Fayl yuklash (Excel)</button>
       </div>
 
+      <!-- Qo'lda kiritish -->
       <form id="form-t-add-student-manual" class="custom-form">
         <div class="photo-upload-container">
           <img id="t-preview-photo" src="https://via.placeholder.com/100?text=Rasm" alt="">
@@ -240,12 +254,14 @@
         <button type="submit" class="primary-btn">O'quvchini Saqlash</button>
       </form>
 
+      <!-- Excel kiritish -->
       <form id="form-t-add-student-excel" class="custom-form hidden">
         <input type="file" id="excel-file" accept=".xlsx, .xls" required style="padding: 10px; background: white;">
         <button type="submit" class="primary-btn"><i class="fa-solid fa-file-excel"></i> Excel orqali Yuklash</button>
       </form>
     </section>
 
+    <!-- O'QITUVCHI: O'QUVCHINI TAHRIRLASH -->
     <section id="screen-t-edit-student" class="screen hidden slide-up">
       <h2 class="section-title">O'quvchini Tahrirlash</h2>
       <form id="form-t-edit-student" class="custom-form">
@@ -271,6 +287,7 @@
       </form>
     </section>
 
+    <!-- DAVOMAT OYNASI -->
     <section id="screen-attendance" class="screen hidden slide-up">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h2 class="section-title" id="att-class-title" style="margin:0;">Davomat</h2>
@@ -285,7 +302,7 @@
       </form>
     </section>
 
-    <!-- PROFIL TAHRIRLASH -->
+    <!-- PROFIL TAHRIRLASH (XAVFSIZLIK BILAN) -->
     <section id="screen-profile" class="screen hidden slide-up">
       <h2 class="section-title">Profilni Tahrirlash</h2>
       <form id="form-edit-profile" class="custom-form">
@@ -308,7 +325,7 @@
           <label for="edit-telegram-id" style="font-size:13px; font-weight: 600; color:var(--danger);">Telegram ID raqamingiz (Majburiy emas):</label>
           <input type="text" id="edit-telegram-id" placeholder="Masalan: 123456789">
           <p style="font-size: 11px; color: var(--hint-color); line-height: 1.4; margin-top:5px;">
-            Agar ushbu maydonga o'z ID raqamingizni kiritsangiz, hisobingiz qulflanadi va unga boshqa Telegram akkauntdan umuman kirib bo'lmaydi. O'z ID raqamingizni <b>@userinfobot</b> orqali bilib olishingiz mumkin.
+            Agar ushbu maydonga o'z ID raqamingizni kiritsangiz, hisobingiz qulflanadi va unga boshqa Telegram akkauntdan umuman kirib bo'lmaydi. O'z ID raqamingizni <b>@userinfobot</b> orqali bilib olishingiz mumkin. Tizim Telegram ID ni avtomatik saqlamaydi, uni o'zingiz kiritishingiz shart.
           </p>
         </div>
 
