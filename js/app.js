@@ -23,6 +23,9 @@ const app = {
   init: () => {
     tg.ready(); 
     tg.expand();
+    
+    // YANGI: Web App yopilayotganda foydalanuvchidan tasdiq so'rash
+    tg.enableClosingConfirmation();
 
     // 1. BRAUZERDAN KIRISHNI BUTUNLAY TAQIQLLASH
     const telegramId = tg.initDataUnsafe?.user?.id;
@@ -38,14 +41,14 @@ const app = {
     document.documentElement.style.setProperty('--bg-color', tg.themeParams.bg_color || '#ffffff');
     document.documentElement.style.setProperty('--text-color', tg.themeParams.text_color || '#000000');
 
-    // TELEGRAM NATIVE BARMOQ IZI INIT
     if (tg.isVersionAtLeast('7.2')) {
       tg.BiometricManager.init(() => {
         console.log("Telegram Biometrika yoqildi.");
       });
     }
 
-    const savedUser = localStorage.getItem('leCrayonUser');
+    // YANGI: localStorage o'rniga sessionStorage (Web App yopilganda profil tozalanadi)
+    const savedUser = sessionStorage.getItem('leCrayonUser');
     if (savedUser) {
       app.currentUser = JSON.parse(savedUser);
       app.routeUser();
@@ -111,7 +114,7 @@ const app = {
   logout: () => {
     tg.showConfirm("Haqiqatan ham tizimdan chiqmoqchimisiz?", (confirm) => {
       if(confirm) {
-        localStorage.removeItem('leCrayonUser');
+        sessionStorage.removeItem('leCrayonUser');
         app.currentUser = null;
         app.historyStack = [];
         document.getElementById('form-login').reset();
@@ -127,8 +130,6 @@ const app = {
   // =====================================
   // YORDAMCHI FUNKSIYALAR
   // =====================================
-
-  // O'zbekiston sanasini aniq olish (Tungi xatoliklarni oldini olish uchun)
   getLocalDate: () => {
     const now = new Date();
     now.setHours(now.getHours() + 5);
@@ -153,7 +154,6 @@ const app = {
     return `<div style="width:100%;">${html}</div>`;
   },
 
-  // KIRILL -> LOTIN O'GIRUVCHI (QIDIRUV UCHUN)
   cyrillicToLatin: (text) => {
     const map = {
       'а':'a', 'б':'b', 'в':'v', 'г':'g', 'д':'d', 'е':'e', 'ё':'yo', 'ж':'j', 'з':'z', 'и':'i', 'й':'y', 'к':'k', 'л':'l', 'м':'m', 'н':'n', 'о':'o', 'п':'p', 'р':'r', 'с':'s', 'т':'t', 'у':'u', 'ф':'f', 'х':'x', 'ц':'s', 'ч':'ch', 'ш':'sh', 'щ':'sh', 'ъ':'', 'ы':'i', 'ь':'', 'э':'e', 'ю':'yu', 'я':'ya',
@@ -185,7 +185,7 @@ const app = {
             if (res.role === 'teacher') app.showScreen('screen-setup-teacher');
           } else {
             app.currentUser = res.user;
-            localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
+            sessionStorage.setItem('leCrayonUser', JSON.stringify(res.user));
             app.routeUser();
           }
         } else {
@@ -197,11 +197,10 @@ const app = {
       }
     });
 
-    // BARMOQ IZI BILAN KIRISH
     const bioLoginBtn = document.getElementById('btn-faceid-login');
     if (bioLoginBtn) {
       bioLoginBtn.addEventListener('click', () => {
-        if (!tg.isVersionAtLeast('7.2')) return tg.showAlert("Telegram versiyangiz eskirgan (7.2 dan yuqori bo'lishi kerak). Iltimos yangilang.");
+        if (!tg.isVersionAtLeast('7.2')) return tg.showAlert("Telegram versiyangiz eskirgan. Iltimos yangilang.");
         if (!tg.BiometricManager.isInited) tg.BiometricManager.init();
 
         setTimeout(() => {
@@ -210,7 +209,7 @@ const app = {
           tg.BiometricManager.authenticate({ reason: "Tizimga kirish uchun barmoq izingizni tasdiqlang" }, async (success, token) => {
             if (success && token) {
               const parts = token.split(':::');
-              if (parts.length !== 2) return tg.showAlert("Biometrika ma'lumotlari xato saqlangan, iltimos qaytadan ulab ko'ring.");
+              if (parts.length !== 2) return tg.showAlert("Biometrika ma'lumotlari xato saqlangan, qaytadan ulab ko'ring.");
               
               try {
                 app.toggleLoader(true);
@@ -219,21 +218,16 @@ const app = {
                 
                 if (res.success) {
                   app.currentUser = res.user;
-                  localStorage.setItem('leCrayonUser', JSON.stringify(res.user));
+                  sessionStorage.setItem('leCrayonUser', JSON.stringify(res.user));
                   app.routeUser();
-                } else {
-                  tg.showAlert("Biometrika orqali kirishda xatolik: " + res.error);
-                }
+                } else { tg.showAlert("Biometrika orqali kirishda xatolik: " + res.error); }
               } catch (err) { app.toggleLoader(false); tg.showAlert("Tarmoq xatosi: " + err.message); }
-            } else if (!success) {
-              tg.showAlert("Barmoq izini tasdiqlash bekor qilindi yoki xato.");
-            }
+            } else if (!success) { tg.showAlert("Barmoq izini tasdiqlash bekor qilindi yoki xato."); }
           });
         }, 300); 
       });
     }
 
-    // BARMOQ IZINI ULASH
     const registerBioBtn = document.getElementById('btn-register-faceid');
     if(registerBioBtn) {
       registerBioBtn.addEventListener('click', () => {
@@ -255,7 +249,6 @@ const app = {
       });
     }
 
-    // ADMIN SETUP
     document.getElementById('form-setup-admin').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
@@ -267,12 +260,11 @@ const app = {
           telegramId: telegramId
         });
         app.toggleLoader(false);
-        if(res.success) { app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); app.routeUser(); } 
+        if(res.success) { app.currentUser = res.user; sessionStorage.setItem('leCrayonUser', JSON.stringify(res.user)); app.routeUser(); } 
         else { tg.showAlert(res.error); }
       } catch (err) { app.toggleLoader(false); tg.showAlert(err.message); }
     });
 
-    // O'QITUVCHI SETUP
     document.getElementById('form-setup-teacher').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
@@ -289,7 +281,7 @@ const app = {
           telegramId: telegramId
         });
         app.toggleLoader(false);
-        if(res.success) { app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); app.routeUser(); } 
+        if(res.success) { app.currentUser = res.user; sessionStorage.setItem('leCrayonUser', JSON.stringify(res.user)); app.routeUser(); } 
         else { tg.showAlert(res.error); }
       } catch (err) { app.toggleLoader(false); tg.showAlert(err.message); }
     });
@@ -310,14 +302,8 @@ const app = {
           reader.onload = (ev) => {
             document.getElementById('image-to-crop').src = ev.target.result;
             document.getElementById('crop-modal').classList.remove('hidden');
-            
             if (app.cropper) app.cropper.destroy();
-            
-            app.cropper = new Cropper(document.getElementById('image-to-crop'), {
-              aspectRatio: 1, 
-              viewMode: 1, 
-              dragMode: 'move',
-            });
+            app.cropper = new Cropper(document.getElementById('image-to-crop'), { aspectRatio: 1, viewMode: 1, dragMode: 'move' });
             app.cropTargetPreviewId = previewId;
           };
           reader.readAsDataURL(file);
@@ -338,7 +324,6 @@ const app = {
 
   applyCrop: () => {
     if (!app.cropper) return;
-    // Rasm sifati pasaytirildi (kenglik 300px va sifat 0.5 - tez yuklanishi uchun)
     const canvas = app.cropper.getCroppedCanvas({ width: 300, height: 300 });
     const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
     document.getElementById(app.cropTargetPreviewId).src = dataUrl;
@@ -362,7 +347,7 @@ const app = {
   },
 
   // =====================================
-  // O'QITUVCHI - SINFLAR VA BOSHQARUV
+  // O'QITUVCHI - GURUHLAR VA BOSHQARUV
   // =====================================
   loadTeacherClasses: async () => {
     document.getElementById('select-teacher-photo').src = app.currentUser.photo_url || 'https://via.placeholder.com/100';
@@ -377,7 +362,7 @@ const app = {
         const c = document.getElementById('t-class-selection-list');
         c.innerHTML = '';
         if (res.data.length === 0) {
-          c.innerHTML = "<p style='text-align:center; color:var(--hint-color); font-size:14px;'>Sizda hozircha sinf yo'q.</p>";
+          c.innerHTML = "<p style='text-align:center; color:var(--hint-color); font-size:14px;'>Sizda hozircha guruh yo'q.</p>";
         } else {
           res.data.forEach(cls => {
             c.innerHTML += `
@@ -395,7 +380,7 @@ const app = {
   selectClass: (classId, className) => {
     app.activeClassId = classId;
     app.activeClassName = className;
-    document.getElementById('my-class-title-text').innerText = `Sinf: ${className}`;
+    document.getElementById('my-class-title-text').innerText = `Guruh: ${className}`;
     app.showScreen('screen-teacher-my-class');
   },
 
@@ -411,7 +396,7 @@ const app = {
         app.toggleLoader(true);
         const res = await API.createClass(document.getElementById('t-class-name').value, app.currentUser.id);
         app.toggleLoader(false);
-        if(res.success) { tg.showAlert("Sinf yaratildi!"); app.goBack(); app.loadTeacherClasses(); }
+        if(res.success) { tg.showAlert("Guruh yaratildi!"); app.goBack(); app.loadTeacherClasses(); }
       } catch(err) { app.toggleLoader(false); tg.showAlert(err.message); }
     });
 
@@ -423,8 +408,8 @@ const app = {
         const res = await API.editClass(app.activeClassId, name);
         app.toggleLoader(false);
         if(res.success) { 
-          app.activeClassName = name; tg.showAlert("Sinf nomi yangilandi!"); 
-          app.goBack(); document.getElementById('my-class-title-text').innerText = `Sinf: ${name}`; 
+          app.activeClassName = name; tg.showAlert("Guruh nomi yangilandi!"); 
+          app.goBack(); document.getElementById('my-class-title-text').innerText = `Guruh: ${name}`; 
         }
       } catch(err) { app.toggleLoader(false); tg.showAlert(err.message); }
     });
@@ -432,13 +417,21 @@ const app = {
     // O'QUVCHI QO'SHISH (MANUAL)
     document.getElementById('form-t-add-student-manual').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const stName = document.getElementById('t-st-name').value.trim();
+      // Bitta guruhda ikkita bir xil ismli o'quvchi qo'shilishini oldini olish
+      if (app.teacherStudentsData.some(s => s.full_name.toLowerCase() === stName.toLowerCase())) {
+        return tg.showAlert("Bu o'quvchi ushbu guruhda allaqachon mavjud!");
+      }
+
       try {
         app.toggleLoader(true);
         const photoBlob = await app.getBlobFromPreview('t-preview-photo');
         const photoUrl = photoBlob ? await API.uploadImage(photoBlob) : '';
         const data = {
-          full_name: document.getElementById('t-st-name').value, 
-          birth_date: document.getElementById('t-st-birth').value, 
+          full_name: stName, 
+          birth_date: document.getElementById('t-st-birth').value,
+          school_class: document.getElementById('t-st-school-class').value, 
           photoUrl: photoUrl,
           classId: app.activeClassId, 
           className: app.activeClassName,
@@ -461,7 +454,7 @@ const app = {
       } catch (err) { app.toggleLoader(false); tg.showAlert("Saqlashda xatolik: " + err.message); }
     });
 
-    // EXCEL YUKLASH (USTOZ UCHUN - SHU SINFGA BOG'LIQ)
+    // EXCEL YUKLASH (YANGI STRUKTURA BILAN)
     document.getElementById('form-t-add-student-excel').addEventListener('submit', async (e) => {
       e.preventDefault();
       const file = document.getElementById('excel-file').files[0];
@@ -477,35 +470,58 @@ const app = {
           const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1}); 
           
           let studentsList = [];
+          let duplicateCount = 0;
+
           for(let i = 1; i < rows.length; i++) {
             const r = rows[i];
             if(r.length === 0 || !r[0]) continue; 
             
-            // 10 ta Sertifikatni o'qish mantig'i 
+            const fullName = String(r[0] || '').trim();
+            const groupName = String(r[3] || app.activeClassName).trim();
+
+            // Agar o'quvchi joriy guruhga qo'shilayotgan bo'lsa va ism bir xil bo'lsa, dublikat qilib tashlaymiz
+            if (groupName.toLowerCase() === app.activeClassName.toLowerCase()) {
+                if (app.teacherStudentsData.some(s => s.full_name.toLowerCase() === fullName.toLowerCase())) {
+                    duplicateCount++;
+                    continue; 
+                }
+            }
+            
             let certs = [];
-            // Exceldagi ustunlar tartibi: Ism(0), Tug'ilgan sana(1), Doimiy(2), Yotoqxona(3), Ota-ona tel(4), Yotoqxona tel(5), Cert1(6-8)...
+            // Excel Yangi tuzilma: 
+            // 0:Ism, 1:Sana, 2:MaktabSinf, 3:Guruh, 4:Yashash, 5:Yotoqxona, 6:Ota-onaTel, 7:YotoqxonaTel, 8:CertNomi...
             for(let j=0; j<10; j++) {
-              let base = 6 + (j*3);
+              let base = 8 + (j*3);
               if(r[base]) certs.push({ name: String(r[base]||''), level: String(r[base+1]||''), percent: String(r[base+2]||'') });
             }
 
             studentsList.push({
-              full_name: String(r[0] || ''),
+              full_name: fullName,
               birth_date: String(r[1] || ''),
-              permanent_address: String(r[2] || ''),
-              dormitory_address: String(r[3] || ''),
-              parent_phone: String(r[4] || ''),
-              dormitory_phone: String(r[5] || ''),
+              school_class: String(r[2] || ''),
+              group_name: groupName,
+              permanent_address: String(r[4] || ''),
+              dormitory_address: String(r[5] || ''),
+              parent_phone: String(r[6] || ''),
+              dormitory_phone: String(r[7] || ''),
               certificates: certs
             });
           }
-          if(studentsList.length === 0) { app.toggleLoader(false); return tg.showAlert("Excel faylda o'qish uchun ma'lumot topilmadi!"); }
+          if(studentsList.length === 0 && duplicateCount === 0) { 
+             app.toggleLoader(false); return tg.showAlert("Excel faylda ma'lumot topilmadi!"); 
+          }
+          if(studentsList.length === 0 && duplicateCount > 0) {
+             app.toggleLoader(false); return tg.showAlert(`Barcha (${duplicateCount} ta) o'quvchi bu guruhda allaqachon mavjud!`);
+          }
           
+          // bulkCreateStudents api si serverdagi yangi logikaga binoan 'group_name' ni tahlil qiladi
           const res = await API.bulkCreateStudents(studentsList, app.activeClassId, app.activeClassName);
           app.toggleLoader(false);
           
           if (res.success) {
-            tg.showAlert(`${res.count} nafar o'quvchi muvaffaqiyatli yuklandi!`);
+            let msg = `${res.count} nafar o'quvchi yuklandi!`;
+            if (duplicateCount > 0) msg += `\n(${duplicateCount} tasi dublikat bo'lgani uchun tushirib qoldirildi).`;
+            tg.showAlert(msg);
             document.getElementById('form-t-add-student-excel').reset();
             app.goBack();
           } else { tg.showAlert(res.error || "Xatolik yuz berdi"); }
@@ -518,6 +534,13 @@ const app = {
     document.getElementById('form-t-edit-student').addEventListener('submit', async (e) => {
       e.preventDefault();
       const stId = document.getElementById('edit-st-id').value;
+      const stName = document.getElementById('edit-st-name').value.trim();
+
+      // Ismi o'zgarayotgan bo'lsa va u ism boshqa bir o'quvchida bor bo'lsa dublikatni tekshirish
+      if (app.teacherStudentsData.some(s => s.id !== stId && s.full_name.toLowerCase() === stName.toLowerCase())) {
+        return tg.showAlert("Bu ismli o'quvchi guruhda allaqachon mavjud!");
+      }
+
       try {
         app.toggleLoader(true);
         const photoBlob = await app.getBlobFromPreview('edit-st-preview-photo');
@@ -528,8 +551,9 @@ const app = {
         }
 
         const data = {
-          full_name: document.getElementById('edit-st-name').value, 
+          full_name: stName, 
           birth_date: document.getElementById('edit-st-birth').value, 
+          school_class: document.getElementById('edit-st-school-class').value,
           photo_url: photoUrl,
           permanent_address: document.getElementById('edit-st-perm').value, 
           dormitory_address: document.getElementById('edit-st-dorm').value,
@@ -561,7 +585,7 @@ const app = {
         app.teacherStudentsData = res.data;
         const c = document.getElementById('t-students-list'); 
         c.innerHTML = '';
-        if(res.data.length === 0) return c.innerHTML = "<p style='text-align:center;'>Ushbu sinfda o'quvchilar mavjud emas.</p>"; 
+        if(res.data.length === 0) return c.innerHTML = "<p style='text-align:center;'>Ushbu guruhda o'quvchilar mavjud emas.</p>"; 
 
         res.data.forEach(st => {
           c.innerHTML += `
@@ -593,6 +617,7 @@ const app = {
     document.getElementById('edit-st-preview-photo').src = st.photo_url;
     document.getElementById('edit-st-name').value = st.full_name; 
     document.getElementById('edit-st-birth').value = st.birth_date || ''; 
+    document.getElementById('edit-st-school-class').value = st.school_class || '';
     document.getElementById('edit-st-perm').value = st.permanent_address;
     document.getElementById('edit-st-dorm').value = st.dormitory_address || ''; 
     document.getElementById('edit-st-parent').value = st.parent_phone;
@@ -619,7 +644,7 @@ const app = {
   },
 
   // =====================================
-  // DAVOMAT QILISH (VA TAHRIRLASH UCHUN TEKSHIRUV)
+  // DAVOMAT 
   // =====================================
   openAttendance: async () => {
     try {
@@ -637,7 +662,6 @@ const app = {
         if(res.data.length === 0) { 
           c.innerHTML = "<p style='text-align:center;'>O'quvchilar yo'q. Avval o'quvchi qo'shing.</p>"; 
         } else {
-          
           const isSubmitted = attRes.success && attRes.isSubmitted;
           const prevRecords = isSubmitted ? attRes.records : [];
           
@@ -710,7 +734,6 @@ const app = {
       const id = item.id.replace('att-box-', '');
       const status = document.querySelector(`input[name="att_${id}"]:checked`).value;
       const comment = document.getElementById(`comment_${id}`).value;
-      // Hamma o'quvchini (shu jumladan "keldi" deganlarni ham) kiritamiz
       records.push({ studentId: id, status, comment: comment || '' });
     });
 
@@ -809,7 +832,7 @@ const app = {
               <img src="${t.photo_url || 'https://via.placeholder.com/100'}" alt="">
               <div class="info">
                 <h4>${t.full_name}</h4>
-                <p><i class="fa-solid fa-users"></i> Sinf: ${t.class_name || "Yo'q"}</p>
+                <p><i class="fa-solid fa-users"></i> Guruh: ${t.class_name || "Yo'q"}</p>
               </div>
             </div>`;
         });
@@ -901,7 +924,7 @@ const app = {
               c.innerHTML += `
                 <div class="student-card" style="cursor:pointer;" onclick="app.showStudentDetails('${st.id}', 'search')">
                   <img src="${st.photo_url}" alt="">
-                  <div class="info"><h4>${st.full_name}</h4><p>Sinf: ${st.class_name}</p></div>
+                  <div class="info"><h4>${st.full_name}</h4><p>Guruh: ${st.class_name}</p></div>
                 </div>`; 
             });
         }
@@ -919,7 +942,7 @@ const app = {
       
       if (resSettings.success && resSettings.time) document.getElementById('reminder-time').value = resSettings.time;
       if (resClasses.success) { 
-        const s1 = document.getElementById('delete-class-select'); s1.innerHTML = '<option value="">Sinfni tanlang...</option>'; 
+        const s1 = document.getElementById('delete-class-select'); s1.innerHTML = '<option value="">Guruhni tanlang...</option>'; 
         resClasses.data.forEach(c => s1.innerHTML += `<option value="${c.id}">${c.class_name}</option>`); 
       }
       if (resTeachers.success) { 
@@ -939,59 +962,6 @@ const app = {
       } catch(err) { app.toggleLoader(false); } 
     });
 
-    // BARCHA O'QUVCHILARNI EXCEL ORQALI YUKLASH
-    document.getElementById('form-admin-bulk-students')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const file = document.getElementById('admin-excel-file').files[0];
-      if (!file) return tg.showAlert("Excel faylini tanlang!");
-      
-      app.toggleLoader(true);
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        try {
-          const data = new Uint8Array(ev.target.result);
-          const workbook = XLSX.read(data, {type: 'array'});
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1}); 
-          
-          let studentsList = [];
-          for(let i = 1; i < rows.length; i++) {
-             const r = rows[i];
-             if(r.length === 0 || !r[0]) continue;
-             let certs = [];
-             
-             // Admin shablon format (0: Ism, 1: Tug'ilgan sana, 2: Sinf nomi, 3: Doimiy, 4: Yotqx, 5: Ota-ona tel, 6: Yotqx tel, 7+: Certs)
-             for(let j=0; j<10; j++) {
-                 let base = 7 + (j*3);
-                 if(r[base]) certs.push({ name: String(r[base]||''), level: String(r[base+1]||''), percent: String(r[base+2]||'') });
-             }
-             studentsList.push({
-               full_name: String(r[0] || ''),
-               birth_date: String(r[1] || ''),
-               class_name: String(r[2] || ''), 
-               permanent_address: String(r[3] || ''),
-               dormitory_address: String(r[4] || ''),
-               parent_phone: String(r[5] || ''),
-               dormitory_phone: String(r[6] || ''),
-               certificates: certs
-             });
-          }
-          if(studentsList.length === 0) {
-            app.toggleLoader(false); return tg.showAlert("Excel faylda ma'lumot topilmadi!");
-          }
-
-          const res = await API.adminGlobalBulkCreateStudents(studentsList);
-          app.toggleLoader(false);
-
-          if (res.success) {
-            tg.showAlert(`${res.count} nafar o'quvchi muvaffaqiyatli yuklandi!`);
-            document.getElementById('form-admin-bulk-students').reset();
-          } else { tg.showAlert(res.error || "Xatolik yuz berdi"); }
-        } catch (error) { app.toggleLoader(false); tg.showAlert("Faylni o'qishda xatolik: " + error.message); }
-      };
-      reader.readAsArrayBuffer(file);
-    });
-
     document.getElementById('form-settings').addEventListener('submit', async (e) => { 
       e.preventDefault(); 
       try { 
@@ -1004,7 +974,7 @@ const app = {
       e.preventDefault(); const cId = document.getElementById('delete-class-select').value; if(!cId) return; 
       tg.showConfirm("O'chirasizmi?", async (conf) => { 
         if(conf) { 
-          try { app.toggleLoader(true); await API.deleteClass(cId); app.toggleLoader(false); tg.showAlert("Sinf o'chirildi"); app.openAdminSettings(); } 
+          try { app.toggleLoader(true); await API.deleteClass(cId); app.toggleLoader(false); tg.showAlert("Guruh o'chirildi"); app.openAdminSettings(); } 
           catch(err) { app.toggleLoader(false); } 
         } 
       }); 
@@ -1041,7 +1011,13 @@ const app = {
           if(photoBlob) { app.toggleLoader(true); data.photo_url = await API.uploadImage(photoBlob); app.toggleLoader(false); }
         }
         app.toggleLoader(true); const res = await API.updateProfile(app.currentUser.id, data); app.toggleLoader(false);
-        if(res.success) { app.currentUser = res.user; localStorage.setItem('leCrayonUser', JSON.stringify(res.user)); tg.showAlert("Ma'lumotlar yangilandi!"); app.goBack(); }
+        
+        if(res.success) { 
+           app.currentUser = res.user; 
+           sessionStorage.setItem('leCrayonUser', JSON.stringify(res.user)); 
+           tg.showAlert("Ma'lumotlar yangilandi!"); 
+           app.goBack(); 
+        }
       } catch(err) { app.toggleLoader(false); tg.showAlert(err.message); }
     });
   },
@@ -1120,19 +1096,21 @@ const app = {
     else if(context === 'search') st = app.currentAdminSearchData.find(s => s.id === id);
     if(!st) return;
     
+    // YANGI: Sertifikatlar rangi neytral (xotirjam) ko'rinishga moslandi
     let certs = st.certificates && st.certificates.length > 0 
-      ? st.certificates.map(c => `<span class="badge" style="margin-bottom:5px;">${c.name} ${c.level} (${c.percent}%)</span>`).join(' ')
+      ? st.certificates.map(c => `<span class="badge" style="margin-bottom:5px; background:var(--secondary-bg); color:var(--text-color); border:1px solid var(--border); font-weight:normal;">${c.name} ${c.level} (${c.percent}%)</span>`).join(' ')
       : 'Sertifikatlar kiritilmagan';
     
     document.getElementById('modal-body').innerHTML = `
       <img src="${st.photo_url}" class="modal-info-img" alt="">
       <h3 style="text-align:center; margin-bottom:10px;">${st.full_name}</h3>
       <div class="modal-data-row"><span>Tug'ilgan sana</span> <strong>${st.birth_date || 'Noma\'lum'}</strong></div>
-      <div class="modal-data-row"><span>Sinf</span> <strong>${st.class_name || 'Sinfsiz'}</strong></div>
+      <div class="modal-data-row"><span>Maktabdagi sinfi</span> <strong>${st.school_class || '-'}</strong></div>
+      <div class="modal-data-row"><span>Guruh (Tizimdagi)</span> <strong>${st.class_name || 'Guruhsiz'}</strong></div>
       <div class="modal-data-row"><span>Doimiy manzil</span> <strong>${st.permanent_address}</strong></div>
       <div class="modal-data-row"><span>Yotoqxona</span> <strong>${st.dormitory_address || '-'}</strong></div>
-      <div class="modal-data-row" style="align-items:flex-start;"><span>Ota-ona telfoni</span> ${app.formatPhones(st.parent_phone)}</div>
-      <div class="modal-data-row" style="align-items:flex-start;"><span>Yotoqxona telfoni</span> ${app.formatPhones(st.dormitory_phone)}</div>
+      <div class="modal-data-row" style="align-items:flex-start;"><span>Ota-ona telefoni</span> ${app.formatPhones(st.parent_phone)}</div>
+      <div class="modal-data-row" style="align-items:flex-start;"><span>Yotoqxona telefoni</span> ${app.formatPhones(st.dormitory_phone)}</div>
       <div class="modal-data-row" style="flex-direction:column; gap:5px;"><span>Sertifikatlar</span> <div>${certs}</div></div>
       <div class="modal-data-row"><span>Qoldirgan (Sababli)</span> <strong style="color:var(--warning);">${st.total_absences?.sababli || 0} marta</strong></div>
       <div class="modal-data-row"><span>Qoldirgan (Sababsiz)</span> <strong style="color:var(--danger);">${st.total_absences?.sababsiz || 0} marta</strong></div>
@@ -1150,7 +1128,7 @@ const app = {
     document.getElementById('modal-body').innerHTML = `
       <img src="${t.photo_url || 'https://via.placeholder.com/100'}" class="modal-info-img" alt="">
       <h3 style="text-align:center; margin-bottom:20px;">${t.full_name}</h3>
-      <div class="modal-data-row"><span>Sinflari</span> <strong>${t.class_name || "Biriktirilmagan"}</strong></div>
+      <div class="modal-data-row"><span>Guruhlari</span> <strong>${t.class_name || "Biriktirilmagan"}</strong></div>
       <div class="modal-data-row" style="align-items:flex-start;"><span>Telefon raqami</span> ${app.formatPhones(t.phone)}</div>
       <div class="modal-data-row"><span>Yashash manzili</span> <strong>${t.address}</strong></div>
       <div class="modal-data-row"><span>Login</span> <strong>${t.username}</strong></div>
