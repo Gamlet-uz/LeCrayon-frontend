@@ -147,7 +147,6 @@ const app = {
     return text.split('').map(char => map[char] || char).join('');
   },
 
-  // YANGI: Exceldan o'qilgan sanani matnga (KK.OO.YYYY) o'girish
   formatExcelDate: (excelDate) => {
     if (!excelDate) return '';
     if (typeof excelDate === 'number') {
@@ -162,7 +161,6 @@ const app = {
     return String(excelDate).trim();
   },
 
-  // YANGI: Exceldan o'qilgan telefonni 9.98E+11 o'rniga oddiy matnga o'girish
   formatExcelPhone: (phoneData) => {
     if (!phoneData) return '';
     if (typeof phoneData === 'number') {
@@ -413,9 +411,7 @@ const app = {
     document.getElementById('form-t-add-student-manual').addEventListener('submit', async (e) => {
       e.preventDefault();
       const stName = document.getElementById('t-st-name').value.trim();
-      if (app.teacherStudentsData.some(s => s.full_name.toLowerCase() === stName.toLowerCase())) {
-        return tg.showAlert("Bu o'quvchi ushbu guruhda allaqachon mavjud!");
-      }
+      
       try {
         app.toggleLoader(true);
         const photoBlob = await app.getBlobFromPreview('t-preview-photo');
@@ -433,15 +429,17 @@ const app = {
           dormitory_phone: document.getElementById('t-st-dormphone').value,
           certificates: app.gatherCertificates('t-certs-container')
         };
+        // Endi dublikat serverda tekshiriladi
         const res = await API.createStudent(data);
         app.toggleLoader(false);
+        
         if(res.success) {
           tg.showAlert("O'quvchi muvaffaqiyatli qo'shildi!");
           document.getElementById('form-t-add-student-manual').reset();
           document.getElementById('t-preview-photo').src = 'https://via.placeholder.com/100?text=Rasm';
           document.getElementById('t-certs-container').innerHTML = '';
           app.goBack();
-        } else { tg.showAlert("Xatolik yuz berdi: " + res.error); }
+        } else { tg.showAlert(res.error); }
       } catch (err) { app.toggleLoader(false); tg.showAlert("Saqlashda xatolik: " + err.message); }
     });
 
@@ -458,11 +456,8 @@ const app = {
           const workbook = XLSX.read(data, {type: 'array'});
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           
-          // MUHIM XUSUSIYAT: raw: true holatida sanalar va telefon raqamlarni olamiz
           const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1, raw: true, defval: ''}); 
-          
           let studentsList = [];
-          let duplicateCount = 0;
 
           for(let i = 1; i < rows.length; i++) {
             const r = rows[i];
@@ -470,12 +465,6 @@ const app = {
             
             const fullName = String(r[0] || '').trim();
             const groupName = String(r[3] || app.activeClassName).trim();
-
-            if (groupName.toLowerCase() === app.activeClassName.toLowerCase()) {
-                if (app.teacherStudentsData.some(s => s.full_name.toLowerCase() === fullName.toLowerCase())) {
-                    duplicateCount++; continue; 
-                }
-            }
             
             let certs = [];
             for(let j=0; j<10; j++) {
@@ -485,29 +474,26 @@ const app = {
 
             studentsList.push({
               full_name: fullName,
-              birth_date: app.formatExcelDate(r[1]), // Sana moslandi
+              birth_date: app.formatExcelDate(r[1]), 
               school_class: String(r[2] || ''),
               group_name: groupName,
               permanent_address: String(r[4] || ''),
               dormitory_address: String(r[5] || ''),
-              parent_phone: app.formatExcelPhone(r[6]), // Telefon moslandi
-              dormitory_phone: app.formatExcelPhone(r[7]), // Telefon moslandi
+              parent_phone: app.formatExcelPhone(r[6]), 
+              dormitory_phone: app.formatExcelPhone(r[7]),
               certificates: certs
             });
           }
-          if(studentsList.length === 0 && duplicateCount === 0) { 
+          if(studentsList.length === 0) { 
              app.toggleLoader(false); return tg.showAlert("Excel faylda ma'lumot topilmadi!"); 
-          }
-          if(studentsList.length === 0 && duplicateCount > 0) {
-             app.toggleLoader(false); return tg.showAlert(`Barcha (${duplicateCount} ta) o'quvchi bu guruhda allaqachon mavjud!`);
           }
           
           const res = await API.bulkCreateStudents(studentsList, app.activeClassId, app.activeClassName);
           app.toggleLoader(false);
           
           if (res.success) {
-            let msg = `${res.count} nafar o'quvchi yuklandi!`;
-            if (duplicateCount > 0) msg += `\n(${duplicateCount} tasi guruhda mavjud bo'lgani uchun tushirib qoldirildi).`;
+            let msg = `${res.count} nafar o'quvchi muvaffaqiyatli yuklandi!`;
+            if (res.duplicates && res.duplicates > 0) msg += `\n(${res.duplicates} tasi bazada oldindan bor bo'lgani uchun yuklanmadi).`;
             tg.showAlert(msg);
             document.getElementById('form-t-add-student-excel').reset();
             app.goBack();
@@ -522,9 +508,6 @@ const app = {
       const stId = document.getElementById('edit-st-id').value;
       const stName = document.getElementById('edit-st-name').value.trim();
 
-      if (app.teacherStudentsData.some(s => s.id !== stId && s.full_name.toLowerCase() === stName.toLowerCase())) {
-        return tg.showAlert("Bu ismli o'quvchi guruhda allaqachon mavjud!");
-      }
       try {
         app.toggleLoader(true);
         const photoBlob = await app.getBlobFromPreview('edit-st-preview-photo');
@@ -625,9 +608,6 @@ const app = {
     });
   },
 
-  // =====================================
-  // DAVOMAT LOGIKASI VA UI
-  // =====================================
   openAttendance: async () => {
     try {
       app.toggleLoader(true);
@@ -1053,11 +1033,18 @@ const app = {
     return certs;
   },
 
-  openDiaryModal: async (stId, stName) => {
+  // YANGILANDI: Modal oynasi osongina ochilishi uchun soddalashtirildi
+  openDiaryModal: async (stId) => {
     try {
-      app.toggleLoader(true); const res = await API.getStudentAttendance(stId); app.toggleLoader(false);
+      const stName = document.querySelector('#modal-body h3').innerText;
+      app.toggleLoader(true); 
+      const res = await API.getStudentAttendance(stId); 
+      app.toggleLoader(false);
+      
       if(res.success) {
-        document.getElementById('diary-student-name').innerText = `${stName} - Daftarcha`; const c = document.getElementById('diary-records-list'); c.innerHTML = '';
+        document.getElementById('diary-student-name').innerText = `${stName} - Daftarcha`; 
+        const c = document.getElementById('diary-records-list'); 
+        c.innerHTML = '';
         if(res.data.length === 0) c.innerHTML = '<p style="text-align:center;">Dars qoldirish/kechikishlar yo\'q.</p>'; 
         else { 
           res.data.forEach(rec => { 
@@ -1100,7 +1087,7 @@ const app = {
       <div class="modal-data-row"><span>Qoldirgan (Sababli)</span> <strong style="color:var(--warning);">${st.total_absences?.sababli || 0} marta</strong></div>
       <div class="modal-data-row"><span>Qoldirgan (Sababsiz)</span> <strong style="color:var(--danger);">${st.total_absences?.sababsiz || 0} marta</strong></div>
       <div class="modal-data-row"><span>Kech qolgan</span> <strong style="color:var(--info);">${st.total_absences?.kech_keldi || 0} marta</strong></div>
-      <button class="secondary-btn" style="margin-top:20px; width:100%; border:1px solid var(--primary-color);" onclick="app.openDiaryModal('${st.id}', '${st.full_name}')">
+      <button class="secondary-btn" style="margin-top:20px; width:100%; border:1px solid var(--primary-color);" onclick="app.openDiaryModal('${st.id}')">
         <i class="fa-solid fa-book"></i> Davomat Daftarchasini Ko'rish
       </button>
     `;
