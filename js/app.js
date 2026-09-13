@@ -520,7 +520,7 @@ const app = {
           
           if (res.success) {
             let msg = `${res.count} nafar o'quvchi yuklandi!`;
-            if (duplicateCount > 0) msg += `\n(${duplicateCount} tasi dublikat bo'lgani uchun tushirib qoldirildi).`;
+            if (duplicateCount > 0) msg += `\n(${duplicateCount} tasi guruhda mavjud bo'lgani uchun tushirib qoldirildi).`;
             tg.showAlert(msg);
             document.getElementById('form-t-add-student-excel').reset();
             app.goBack();
